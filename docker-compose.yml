@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build: .
+    container_name: bubble-backend-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - bubble-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis for BullMQ
+  redis:
+    image: redis:7-alpine
+    container_name: bubble-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - bubble-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Worker processes
+  workers:
+    build: .
+    container_name: bubble-workers
+    restart: unless-stopped
+    command: node workers/index.js
+    environment:
+      - NODE_ENV=production
+      - ENABLE_WORKERS=true
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - bubble-network
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  bubble-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build
+dist/
+build/
+
+# Private workers (MUST NOT BE COMMITTED)
+workers/private/
+
+# Test coverage
+coverage/
+
+# PM2
+.pm2/
+
+# Misc
+*.pem
+*.key
+.cache/

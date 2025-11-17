@@ -1,0 +1,41 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Tests
+tests
+coverage
+
+# Documentation
+docs/*.md
+README.md
+
+# Private workers (already gitignored, but also dockerignore)
+workers/private/*
+!workers/private/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+*.swp
+*.swo
+.cache
