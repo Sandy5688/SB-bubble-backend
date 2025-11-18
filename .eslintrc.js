@@ -4,14 +4,15 @@ module.exports = {
     es2021: true,
     jest: true
   },
-  extends: 'eslint:recommended',
+  extends: ['eslint:recommended'],
   parserOptions: {
-    ecmaVersion: 'latest',
+    ecmaVersion: 12,
     sourceType: 'module'
   },
   rules: {
-    'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    'no-console': 'off',
-    'prefer-const': 'warn'
+    'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    'prefer-const': 'error',
+    'no-var': 'error'
   }
 };
