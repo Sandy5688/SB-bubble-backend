@@ -1,41 +1,20 @@
-# Node modules
 node_modules
 npm-debug.log
-
-# Environment files
 .env
-.env.local
-.env.*.local
-
-# Logs
-logs
-*.log
-
-# Git
+.env.*
 .git
 .gitignore
-
-# IDE
+README.md
 .vscode
 .idea
-
-# Tests
-tests
 coverage
-
-# Documentation
-docs/*.md
-README.md
-
-# Private workers (already gitignored, but also dockerignore)
-workers/private/*
-!workers/private/.gitkeep
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Misc
-*.swp
-*.swo
-.cache
+.nyc_output
+tests
+*.test.js
+*.spec.js
+.github
+docs
+documentation
+*.md
+!package.json
+!package-lock.json
