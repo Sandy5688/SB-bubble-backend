@@ -1,109 +1,76 @@
-const { supabase, supabaseAdmin } = require('../config/database');
-const { AppError } = require('../middleware/errorHandler');
-const logger = require('../utils/logger');
-const jwt = require('jsonwebtoken');
-const env = require('../config/env');
+const { supabase, supabaseAdmin } = require('../config/supabase');
+const { hash } = require('../utils/encryption');
 
-class AuthService {
-  // Sign up new user
-  async signUp(email, password, userData = {}) {
-    try {
-      const { data, error } = await supabase.auth.signUp({
+/**
+ * Auth Service
+ * Handles authentication operations with Supabase
+ */
+
+const signUp = async ({ email, password, firstName, lastName }) => {
+  // Create auth user
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (authError) throw authError;
+
+  // Create user profile
+  const { data: profile, error: profileError } = await supabase
+    .from('users')
+    .insert([
+      {
+        id: authData.user.id,
         email,
-        password,
-        options: {
-          data: userData
-        }
-      });
+        first_name: firstName,
+        last_name: lastName,
+      },
+    ])
+    .select()
+    .single();
 
-      if (error) throw new AppError(error.message, 400);
+  if (profileError) throw profileError;
 
-      logger.info('User signed up', { userId: data.user?.id, email });
-      return data;
-    } catch (error) {
-      logger.error('Sign up error', { error: error.message });
-      throw error;
-    }
-  }
+  return { user: authData.user, profile };
+};
 
-  // Sign in user
-  async signIn(email, password) {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+const signIn = async ({ email, password }) => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-      if (error) throw new AppError(error.message, 401);
+  if (error) throw error;
+  return data;
+};
 
-      // Update last login
-      await supabaseAdmin
-        .from('users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.user.id);
+const signOut = async (_token) => {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+  return { success: true };
+};
 
-      logger.info('User signed in', { userId: data.user.id, email });
-      return data;
-    } catch (error) {
-      logger.error('Sign in error', { error: error.message });
-      throw error;
-    }
-  }
+const resetPassword = async ({ email }) => {
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) throw error;
+  return { success: true };
+};
 
-  // Sign out user
-  async signOut(token) {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw new AppError(error.message, 400);
+const getUser = async (userId) => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
 
-      logger.info('User signed out');
-      return { success: true };
-    } catch (error) {
-      logger.error('Sign out error', { error: error.message });
-      throw error;
-    }
-  }
+  if (error) throw error;
+  return data;
+};
 
-  // Refresh token
-  async refreshToken(refreshToken) {
-    try {
-      const { data, error } = await supabase.auth.refreshSession({ refreshToken });
-      if (error) throw new AppError(error.message, 401);
-
-      logger.info('Token refreshed', { userId: data.user?.id });
-      return data;
-    } catch (error) {
-      logger.error('Refresh token error', { error: error.message });
-      throw error;
-    }
-  }
-
-  // Get user by token
-  async getUserByToken(token) {
-    try {
-      const { data, error } = await supabase.auth.getUser(token);
-      if (error) throw new AppError(error.message, 401);
-
-      return data.user;
-    } catch (error) {
-      logger.error('Get user by token error', { error: error.message });
-      throw error;
-    }
-  }
-
-  // Reset password request
-  async resetPasswordRequest(email) {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) throw new AppError(error.message, 400);
-
-      logger.info('Password reset requested', { email });
-      return { success: true };
-    } catch (error) {
-      logger.error('Reset password request error', { error: error.message });
-      throw error;
-    }
-  }
-}
-
-module.exports = new AuthService();
+module.exports = {
+  signUp,
+  signIn,
+  signOut,
+  resetPassword,
+  getUser,
+};

@@ -53,7 +53,7 @@ router.get('/detailed', validateApiKey, async (req, res) => {
 async function quickDbCheck() {
   try {
     const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-    const { data, error } = await supabase.from('users').select('count').limit(1);
+    const { error } = await supabase.from('users').select('count').limit(1);
     return error ? 'unhealthy' : 'healthy';
   } catch (error) {
     return 'unhealthy';

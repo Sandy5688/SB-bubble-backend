@@ -100,7 +100,7 @@ class SafeSupabase {
   /**
    * Safe RPC call with whitelist
    */
-  async safeRpc(functionName, params = {}) {
+  async safeRpc(functionName, _params = {}) {
     try {
       // Whitelist of allowed RPC functions
       const allowedFunctions = [
@@ -114,7 +114,7 @@ class SafeSupabase {
         throw new Error(`RPC function '${functionName}' not in whitelist`);
       }
 
-      const { data, error } = await this.client.rpc(functionName, params);
+      const { data, error } = await this.client.rpc(functionName, _params);
 
       if (error) throw error;
       return { data, error: null };

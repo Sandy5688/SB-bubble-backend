@@ -2,7 +2,6 @@ const request = require('supertest');
 const app = require('../../app');
 
 describe('Security Middleware', () => {
-  const apiKey = process.env.INTERNAL_API_KEY;
   
   describe('API Key Validation', () => {
     test('should reject request without API key', async () => {

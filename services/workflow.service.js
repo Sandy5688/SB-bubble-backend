@@ -1,7 +1,6 @@
 const { supabaseAdmin } = require('../config/database');
 const { AppError } = require('../middleware/errorHandler');
 const logger = require('../utils/logger');
-const { v4: uuidv4 } = require('uuid');
 
 class WorkflowService {
   // Create a new workflow run

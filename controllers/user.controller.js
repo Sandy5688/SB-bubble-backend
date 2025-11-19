@@ -1,5 +1,4 @@
 const userService = require('../services/user.service');
-const { AppError } = require('../middleware/errorHandler');
 
 class UserController {
   async getProfile(req, res, next) {

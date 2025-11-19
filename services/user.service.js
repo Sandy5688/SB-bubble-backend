@@ -15,7 +15,7 @@ class UserService {
 
       if (userError) throw new AppError('User not found', 404);
 
-      const { data: profile, error: profileError } = await supabaseAdmin
+      const { data: profile, error } = await supabaseAdmin
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
