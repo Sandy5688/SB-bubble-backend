@@ -1,5 +1,4 @@
-const { supabase, supabaseAdmin } = require('../config/supabase');
-const { hash } = require('../utils/encryption');
+const { supabase } = require('../config/supabase');
 
 /**
  * Auth Service
