@@ -2,34 +2,35 @@ const express = require('express');
 const router = express.Router();
 const paymentController = require('../controllers/payment.controller');
 const { paymentLimiter } = require('../middleware/security');
+const { ensureIdempotency } = require('../utils/idempotency');
 
 /**
  * @route   POST /api/v1/pay/stripe/create
- * @desc    Create Stripe payment
+ * @desc    Create Stripe payment (with idempotency)
  * @access  Private
  */
-router.post('/stripe/create', paymentLimiter, paymentController.createStripePayment);
+router.post('/stripe/create', paymentLimiter, ensureIdempotency(), paymentController.createStripePayment);
 
 /**
  * @route   POST /api/v1/pay/paypal/create
- * @desc    Create PayPal payment
+ * @desc    Create PayPal payment (with idempotency)
  * @access  Private
  */
-router.post('/paypal/create', paymentLimiter, paymentController.createPayPalPayment);
+router.post('/paypal/create', paymentLimiter, ensureIdempotency(), paymentController.createPayPalPayment);
 
 /**
  * @route   POST /api/v1/pay/confirm
- * @desc    Confirm payment
+ * @desc    Confirm payment (with idempotency)
  * @access  Private
  */
-router.post('/confirm', paymentController.confirmPayment);
+router.post('/confirm', paymentLimiter, ensureIdempotency(), paymentController.confirmPayment);
 
 /**
  * @route   POST /api/v1/pay/refund/:transactionId
- * @desc    Refund payment
+ * @desc    Refund payment (with idempotency)
  * @access  Private
  */
-router.post('/refund/:transactionId', paymentController.refundPayment);
+router.post('/refund/:transactionId', paymentLimiter, ensureIdempotency(), paymentController.refundPayment);
 
 /**
  * @route   GET /api/v1/pay/transaction/:transactionId
@@ -40,9 +41,16 @@ router.get('/transaction/:transactionId', paymentController.getTransaction);
 
 /**
  * @route   POST /api/v1/pay/webhook/stripe
- * @desc    Stripe webhook handler
+ * @desc    Stripe webhook handler (raw body for signature verification)
  * @access  Public (verified by signature)
  */
 router.post('/webhook/stripe', express.raw({ type: 'application/json' }), paymentController.stripeWebhook);
+
+/**
+ * @route   POST /api/v1/pay/webhook/paypal
+ * @desc    PayPal webhook handler (raw body for signature verification)
+ * @access  Public (verified by signature)
+ */
+router.post('/webhook/paypal', express.raw({ type: 'application/json' }), paymentController.paypalWebhook);
 
 module.exports = router;

@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
+// Import REAL middleware (not fake ones!)
+const { authenticate } = require('../middleware/auth.middleware');
+const { validateApiKey } = require('../middleware/security');
+
 // Import route modules
 const authRoutes = require('./auth.routes');
 const userRoutes = require('./user.routes');
@@ -10,24 +14,6 @@ const messagingRoutes = require('./messaging.routes');
 const aiRoutes = require('./ai.routes');
 const workflowRoutes = require('./workflow.routes');
 const healthRoutes = require('./health.routes');
-
-// Simple authentication middleware (placeholder)
-const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  // TODO: Validate token with auth service when credentials are added
-  req.user = { id: 'test-user-id' };
-  next();
-};
-
-// Simple API key validation (placeholder)
-const validateApiKey = (req, res, next) => {
-  const apiKey = req.headers['x-api-key'];
-  // For now, accept any API key or none - client will add real validation
-  next();
-};
 
 // Root API info
 router.get('/', (req, res) => {
@@ -53,7 +39,7 @@ router.use('/health', healthRoutes);
 // Auth routes (public)
 router.use('/auth', authRoutes);
 
-// Protected routes (require authentication)
+// Protected routes (require REAL authentication)
 router.use('/user', authenticate, userRoutes);
 router.use('/files', authenticate, fileRoutes);
 router.use('/pay', authenticate, paymentRoutes);

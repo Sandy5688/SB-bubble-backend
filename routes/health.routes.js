@@ -4,9 +4,10 @@ const { getRedisClient } = require('../config/redis');
 const { createClient } = require('@supabase/supabase-js');
 const AWS = require('aws-sdk');
 const env = require('../config/env');
+const { validateApiKey } = require('../middleware/security');
 
 /**
- * Basic health check
+ * Basic health check (public)
  */
 router.get('/', async (req, res) => {
   const health = {
@@ -16,21 +17,32 @@ router.get('/', async (req, res) => {
     environment: env.NODE_ENV,
     version: '1.0.0'
   };
-  
-  // Check if extended checks requested
-  if (req.query.detailed === 'true') {
-    health.checks = await performDetailedChecks();
-  } else {
-    // Quick database check
-    health.database = await quickDbCheck();
-  }
-  
+
+  // Quick database check only for basic health
+  health.database = await quickDbCheck();
+
+  const statusCode = health.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(health);
+});
+
+/**
+ * Detailed health check (PROTECTED - requires API key)
+ * Prevents infrastructure fingerprinting
+ */
+router.get('/detailed', validateApiKey, async (req, res) => {
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: env.NODE_ENV,
+    version: '1.0.0',
+    checks: await performDetailedChecks()
+  };
+
   // Overall health status
-  if (req.query.detailed === 'true' && health.checks) {
-    const allHealthy = Object.values(health.checks).every(check => check.status === 'healthy');
-    health.status = allHealthy ? 'healthy' : 'degraded';
-  }
-  
+  const allHealthy = Object.values(health.checks).every(check => check.status === 'healthy');
+  health.status = allHealthy ? 'healthy' : 'degraded';
+
   const statusCode = health.status === 'healthy' ? 200 : 503;
   res.status(statusCode).json(health);
 });
@@ -53,19 +65,19 @@ async function quickDbCheck() {
  */
 async function performDetailedChecks() {
   const checks = {};
-  
+
   // Database check
   checks.database = await checkDatabase();
-  
+
   // Redis check
   checks.redis = await checkRedis();
-  
+
   // S3 check
   checks.s3 = await checkS3();
-  
+
   // Memory check
   checks.memory = checkMemory();
-  
+
   return checks;
 }
 
@@ -78,7 +90,7 @@ async function checkDatabase() {
     const start = Date.now();
     const { error } = await supabase.from('users').select('count').limit(1);
     const responseTime = Date.now() - start;
-    
+
     return {
       status: error ? 'unhealthy' : 'healthy',
       responseTime: `${responseTime}ms`,
@@ -101,7 +113,7 @@ async function checkRedis() {
     const start = Date.now();
     await redis.ping();
     const responseTime = Date.now() - start;
-    
+
     return {
       status: 'healthy',
       responseTime: `${responseTime}ms`,
@@ -125,11 +137,11 @@ async function checkS3() {
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
       region: env.AWS_REGION
     });
-    
+
     const start = Date.now();
     await s3.headBucket({ Bucket: env.S3_BUCKET_NAME }).promise();
     const responseTime = Date.now() - start;
-    
+
     return {
       status: 'healthy',
       responseTime: `${responseTime}ms`,
@@ -151,7 +163,7 @@ function checkMemory() {
   const totalMB = Math.round(used.heapTotal / 1024 / 1024);
   const usedMB = Math.round(used.heapUsed / 1024 / 1024);
   const percentage = Math.round((usedMB / totalMB) * 100);
-  
+
   return {
     status: percentage > 90 ? 'warning' : 'healthy',
     total: `${totalMB}MB`,
