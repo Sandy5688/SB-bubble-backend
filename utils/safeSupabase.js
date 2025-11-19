@@ -160,6 +160,7 @@ class SafeSupabase {
   /**
    * Raw query (RESTRICTED - logs warning)
    */
+  // eslint-disable-next-line no-unused-vars
   async rawQuery(sql, params = []) {
     console.error('⚠️  WARNING: Raw SQL query attempted!');
     console.error('⚠️  SQL:', sql);
