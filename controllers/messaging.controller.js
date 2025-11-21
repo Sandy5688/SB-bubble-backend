@@ -1,62 +1,34 @@
-const messagingService = require('../services/messaging.service');
-const { AppError } = require('../middleware/errorHandler');
+/**
+ * Messaging Controller
+ * Handles email and SMS operations
+ */
 
-class MessagingController {
-  async sendEmail(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const { recipient, subject, body, html_body } = req.body;
-
-      if (!recipient || !subject || !body) {
-        throw new AppError('Recipient, subject, and body are required', 400);
-      }
-
-      const message = await messagingService.sendEmail(userId, recipient, subject, body, html_body);
-
-      res.status(200).json({
-        status: 'success',
-        data: { message }
-      });
-    } catch (error) {
-      next(error);
-    }
+exports.sendEmail = async (req, res) => {
+  try {
+    // TODO: Implement SendGrid email sending
+    res.json({
+      status: 'success',
+      message: 'Email functionality not yet implemented'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
+};
 
-  async sendSMS(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const { recipient, body } = req.body;
-
-      if (!recipient || !body) {
-        throw new AppError('Recipient and body are required', 400);
-      }
-
-      const message = await messagingService.sendSMS(userId, recipient, body);
-
-      res.status(200).json({
-        status: 'success',
-        data: { message }
-      });
-    } catch (error) {
-      next(error);
-    }
+exports.sendSMS = async (req, res) => {
+  try {
+    // TODO: Implement Twilio SMS sending
+    res.json({
+      status: 'success',
+      message: 'SMS functionality not yet implemented'
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
   }
-
-  async getMessageStatus(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const { messageId } = req.params;
-
-      const message = await messagingService.getMessageStatus(messageId, userId);
-
-      res.status(200).json({
-        status: 'success',
-        data: { message }
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-}
-
-module.exports = new MessagingController();
+};
