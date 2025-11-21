@@ -1,31 +1,66 @@
-// Test setup and global mocks
+// Global test setup
 process.env.NODE_ENV = 'test';
-process.env.PORT = 3001;
-process.env.SUPABASE_URL = 'https://test.supabase.co';
-process.env.SUPABASE_ANON_KEY = 'test-anon-key';
-process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
-process.env.AWS_REGION = 'us-east-1';
-process.env.AWS_ACCESS_KEY_ID = 'test-access-key';
-process.env.AWS_SECRET_ACCESS_KEY = 'test-secret-key';
-process.env.S3_BUCKET_NAME = 'test-bucket';
-process.env.STRIPE_SECRET_KEY = 'sk_test_123';
-process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_123';
-process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_123';
-process.env.PAYPAL_MODE = 'sandbox';
-process.env.PAYPAL_CLIENT_ID = 'test-paypal-client-id';
-process.env.PAYPAL_CLIENT_SECRET = 'test-paypal-secret';
-process.env.SENDGRID_API_KEY = 'SG.test-key';
-process.env.SENDGRID_FROM_EMAIL = 'test@example.com';
-process.env.SENDGRID_FROM_NAME = 'Test App';
-process.env.OPENAI_API_KEY = 'sk-test-openai-key';
-process.env.OPENAI_MODEL = 'gpt-4-turbo-preview';
-process.env.REDIS_HOST = 'localhost';
-process.env.REDIS_PORT = '6379';
 process.env.JWT_SECRET = 'test-jwt-secret';
-process.env.ENCRYPTION_KEY = 'test-encryption-key-32-characters';
 process.env.INTERNAL_API_KEY = 'test-internal-api-key';
-process.env.ALLOWED_ORIGINS = 'http://localhost:3000';
-process.env.ENABLE_WORKERS = 'false';
+process.env.INTERNAL_HMAC_SECRET = 'test-hmac-secret-for-testing-at-least-32-chars-long';
+
+// Mock Supabase for tests
+jest.mock('../config/supabase', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: null, error: null })),
+          is: jest.fn(() => Promise.resolve({ 
+            data: [{ supported_features: ['11111111-1111-1111-1111-111111111111'] }], 
+            error: null 
+          })),
+          or: jest.fn(() => ({
+            order: jest.fn(() => Promise.resolve({
+              data: [
+                { supported_features: ['11111111-1111-1111-1111-111111111111'] },
+                { supported_features: ['77777777-7777-7777-7777-777777777777'] }
+              ],
+              error: null
+            }))
+          }))
+        })),
+        in: jest.fn(() => Promise.resolve({ data: [], error: null }))
+      })),
+      insert: jest.fn(() => ({
+        select: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: null, error: null }))
+        }))
+      })),
+      update: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          select: jest.fn(() => Promise.resolve({ data: null, error: null }))
+        }))
+      }))
+    })),
+    auth: {
+      signUp: jest.fn(() => Promise.resolve({ 
+        data: { user: { id: '123' } }, 
+        error: null 
+      })),
+      signInWithPassword: jest.fn(() => Promise.resolve({ 
+        data: { user: { id: '123' }, session: { access_token: 'token' } }, 
+        error: null 
+      })),
+      signOut: jest.fn(() => Promise.resolve({ error: null })),
+      resetPasswordForEmail: jest.fn(() => Promise.resolve({ error: null }))
+    }
+  },
+  supabaseAdmin: {
+    from: jest.fn(() => ({
+      select: jest.fn(() => ({
+        eq: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({ data: null, error: null }))
+        }))
+      }))
+    }))
+  }
+}));
 
 // Suppress console logs during tests
 global.console = {
@@ -34,5 +69,5 @@ global.console = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
-  error: jest.fn()
+  error: jest.fn(),
 };

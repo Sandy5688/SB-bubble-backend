@@ -1,42 +1,19 @@
-// Mock dependencies before requiring the service
-jest.mock('../../config/supabase', () => ({
-  supabase: {
-    from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          is: jest.fn(() => ({
-            data: [{ supported_features: ['11111111-1111-1111-1111-111111111111'] }],
-            error: null
-          })),
-          or: jest.fn(() => ({
-            order: jest.fn(() => ({
-              data: [
-                { supported_features: ['11111111-1111-1111-1111-111111111111'] },
-                { supported_features: ['77777777-7777-7777-7777-777777777777'] }
-              ],
-              error: null
-            }))
-          }))
-        }))
-      }))
-    }))
-  }
-}));
+const regionService = require('../../services/region.service');
 
+// Mock Redis
 jest.mock('../../config/redis', () => ({
   get: jest.fn(() => Promise.resolve(null)),
   setex: jest.fn(() => Promise.resolve('OK')),
   del: jest.fn(() => Promise.resolve(1))
 }));
 
+// Mock logger
 jest.mock('../../utils/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
   warn: jest.fn()
 }));
-
-const regionService = require('../../services/region.service');
 
 describe('Region Service', () => {
   describe('getSupportedFeatures', () => {
