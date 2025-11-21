@@ -19,23 +19,26 @@ module.exports = cleanEnv(process.env, {
   // Redis
   REDIS_URL: str({ default: '' }),
   
-  // External Services (optional)
+  // External Services
   SENTRY_DSN: str({ default: '' }),
   ALLOWED_ORIGINS: str({ default: 'http://localhost:3000' }),
   
-  // Payment (optional)
+  // AI Services
+  OPENAI_API_KEY: str({ default: '' }),
+  
+  // Payment
   STRIPE_SECRET_KEY: str({ default: '' }),
   PAYPAL_CLIENT_ID: str({ default: '' }),
   PAYPAL_CLIENT_SECRET: str({ default: '' }),
   
-  // Messaging (optional)
+  // Messaging
   TWILIO_ACCOUNT_SID: str({ default: '' }),
   TWILIO_AUTH_TOKEN: str({ default: '' }),
   SENDGRID_API_KEY: str({ default: '' }),
   
-  // AWS (optional)
+  // AWS
   AWS_ACCESS_KEY_ID: str({ default: '' }),
   AWS_SECRET_ACCESS_KEY: str({ default: '' }),
   AWS_S3_BUCKET: str({ default: '' }),
-  AWS_REGION: str({ default: 'us-east-1' }),  // ← ADDED THIS!
+  AWS_REGION: str({ default: 'us-east-1' }),
 });
