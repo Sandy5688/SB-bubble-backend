@@ -2,8 +2,6 @@ const express = require('express');
 const router = express.Router();
 const messagingController = require('../controllers/messaging.controller');
 const { validateApiKey, authenticate } = require('../middleware/security');
-const { validate } = require('../middleware/validate');
-const { messagingValidation } = require('../validation/messaging.validation');
 const rateLimit = require('express-rate-limit');
 const env = require('../config/env');
 
@@ -32,7 +30,6 @@ router.post('/email',
   validateApiKey,
   authenticate,
   messagingLimiter,
-  validate(messagingValidation.sendEmail),
   messagingController.sendEmail
 );
 
@@ -45,7 +42,6 @@ router.post('/sms',
   validateApiKey,
   authenticate,
   messagingLimiter,
-  validate(messagingValidation.sendSMS),
   messagingController.sendSMS
 );
 
