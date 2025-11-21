@@ -1,6 +1,6 @@
 const rateLimit = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis');
-const { getRedisClient, isRedisHealthy } = require('../config/redis');
+const redis = require('../config/redis');
 
 /**
  * Redis-Based Brute Force Protection (FIX #10)
@@ -9,9 +9,9 @@ const { getRedisClient, isRedisHealthy } = require('../config/redis');
 
 // Get Redis store if available
 function getStore(prefix) {
-  if (isRedisHealthy()) {
+  if (redis && typeof redis.get === "function") {
     return new RedisStore({
-      client: getRedisClient(),
+      client: redis,
       prefix: prefix
     });
   }
