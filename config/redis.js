@@ -4,12 +4,7 @@ const env = require('./env');
 let redisClient = null;
 let isRedisAvailable = false;
 
-/**
- * Initialize Redis connection
- * Returns null if Redis is not available (graceful degradation)
- */
 function initRedis() {
-  // Skip Redis in test environment if not explicitly configured
   if (env.NODE_ENV === 'test' && !env.REDIS_URL) {
     console.log('ℹ️  Test mode: Redis disabled');
     return null;
@@ -30,10 +25,6 @@ function initRedis() {
         }
         return Math.min(times * 200, 1000);
       },
-      reconnectOnError(err) {
-        console.error('Redis reconnect error:', err.message);
-        return false;
-      },
     });
 
     redisClient.on('connect', () => {
@@ -46,11 +37,6 @@ function initRedis() {
       console.error('Redis error:', err.message);
     });
 
-    redisClient.on('close', () => {
-      isRedisAvailable = false;
-      console.warn('⚠️  Redis connection closed');
-    });
-
     return redisClient;
   } catch (error) {
     console.error('Failed to initialize Redis:', error.message);
@@ -58,22 +44,13 @@ function initRedis() {
   }
 }
 
-/**
- * Get Redis client (with availability check)
- * Returns null if Redis is not available (for graceful degradation)
- */
 function getRedisClient() {
-  // In test mode, return a mock Redis client
   if (env.NODE_ENV === 'test') {
     return {
       get: () => Promise.resolve(null),
       set: () => Promise.resolve('OK'),
       setex: () => Promise.resolve('OK'),
       del: () => Promise.resolve(1),
-      exists: () => Promise.resolve(0),
-      incr: () => Promise.resolve(1),
-      expire: () => Promise.resolve(1),
-      ttl: () => Promise.resolve(-1),
       disconnect: () => Promise.resolve(),
     };
   }
@@ -86,9 +63,6 @@ function getRedisClient() {
   return redisClient;
 }
 
-/**
- * Close Redis connection
- */
 async function closeRedis() {
   if (redisClient) {
     await redisClient.quit();
@@ -96,12 +70,13 @@ async function closeRedis() {
   }
 }
 
-// Initialize Redis on module load (except in test mode)
 if (env.NODE_ENV !== 'test') {
   initRedis();
 }
 
-module.exports = getRedisClient();
-if (module.exports) { module.exports.getRedisClient = getRedisClient; }
-if (module.exports) { module.exports.closeRedis = closeRedis; }
-if (module.exports) { module.exports.isAvailable = () => isRedisAvailable; }
+// PROPER EXPORTS
+module.exports = {
+  getRedisClient,
+  closeRedis,
+  isAvailable: () => isRedisAvailable
+};
