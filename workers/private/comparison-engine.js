@@ -26,7 +26,7 @@ queues.comparisonEngine.process(async (job) => {
   }
 });
 
-async function deepCompare(dataA, dataB, options) {
+async function deepCompare(_dataA, _dataB, options) {
   logger.info('Deep comparison started', { optionsCount: Object.keys(options || {}).length });
   await new Promise(resolve => setTimeout(resolve, 2000));
   return {
@@ -36,7 +36,7 @@ async function deepCompare(dataA, dataB, options) {
   };
 }
 
-async function structuralCompare(dataA, dataB) {
+async function structuralCompare(_dataA, _dataB) {
   logger.info('Structural comparison started');
   await new Promise(resolve => setTimeout(resolve, 1000));
   return {
@@ -46,7 +46,7 @@ async function structuralCompare(dataA, dataB) {
   };
 }
 
-async function semanticCompare(dataA, dataB) {
+async function semanticCompare(_dataA, _dataB) {
   logger.info('Semantic comparison started');
   await new Promise(resolve => setTimeout(resolve, 2500));
   return {

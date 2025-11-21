@@ -30,17 +30,16 @@ queues.externalInteraction.process(async (job) => {
       retryCount 
     });
     
-    // Retry logic
     if (retryCount < 3) {
       logger.info('Scheduling retry', { service, action, nextRetry: retryCount + 1 });
-      throw error; // Bull will handle retry
+      throw error;
     }
     
     throw new Error(`Failed after ${retryCount + 1} attempts: ${error.message}`);
   }
 });
 
-async function handlePaymentService(action, payload) {
+async function handlePaymentService(action, _payload) {
   logger.info('Payment service interaction', { action });
   await new Promise(resolve => setTimeout(resolve, 2000));
   return { status: 'payment_processed', transactionId: `txn_${Date.now()}` };

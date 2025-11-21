@@ -1,4 +1,3 @@
-cat > ecosystem.config.js << 'EOF'
 // ecosystem.config.js - PM2 Configuration
 module.exports = {
   apps: [
@@ -42,7 +41,7 @@ module.exports = {
       script: './cron/index.js',
       instances: 1,
       exec_mode: 'fork',
-      cron_restart: '0 0 * * *', // Restart daily at midnight
+      cron_restart: '0 0 * * *',
       env: {
         NODE_ENV: 'development',
       },

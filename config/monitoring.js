@@ -54,7 +54,7 @@ function createLogger(serviceName = 'backend') {
       format: winston.format.combine(
         winston.format.colorize(),
         winston.format.printf(({ timestamp, level, message, service, ...meta }) => {
-          let metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
+          const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
           return `${timestamp} [${service}] ${level}: ${message} ${metaStr}`;
         })
       ),
