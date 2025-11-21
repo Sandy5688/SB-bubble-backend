@@ -6,7 +6,6 @@ const logger = createLogger('worker-manager');
 function startAllWorkers() {
   logger.info('👷 Starting all workers...');
   
-  // Import workers (this starts them)
   require('./private/ai-orchestrator');
   require('./private/comparison-engine');
   require('./private/long-action-runner');

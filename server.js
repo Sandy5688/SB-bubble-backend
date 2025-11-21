@@ -1,25 +1,50 @@
 const app = require('./app');
+const { initSentry, createLogger, requestLogger, sentryErrorHandler } = require('./config/monitoring');
+const { startAllWorkers } = require('./workers');
+const { startAllCronJobs } = require('./cron');
 
 const PORT = process.env.PORT || 3000;
+const logger = createLogger('backend-api');
+
+// Initialize Sentry (if DSN is configured)
+initSentry(app);
+
+// Add request logging
+app.use(requestLogger(logger));
+
+// Add Sentry error handler
+app.use(sentryErrorHandler());
 
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Region Context Layer: Active`);
+  logger.info(`🚀 Server running on port ${PORT}`);
+  logger.info(`🌍 Region Context Layer: Active`);
+  logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// Start workers and cron jobs in production
+if (process.env.NODE_ENV === 'production' || process.env.START_WORKERS === 'true') {
+  try {
+    startAllWorkers();
+    startAllCronJobs();
+    logger.info('✅ Workers and cron jobs started');
+  } catch (error) {
+    logger.warn('⚠️ Workers/Cron require Redis - skipping', { error: error.message });
+  }
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server...');
+  logger.info('SIGTERM received, closing server...');
   server.close(() => {
-    console.log('Server closed');
+    logger.info('Server closed');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('SIGINT received, closing server...');
+  logger.info('SIGINT received, closing server...');
   server.close(() => {
-    console.log('Server closed');
+    logger.info('Server closed');
     process.exit(0);
   });
 });
