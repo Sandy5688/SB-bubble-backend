@@ -197,7 +197,7 @@ class KYCProcessor {
   /**
    * Call external verification vendor (optional)
    */
-  async callVerificationVendor(doc, ocrData) {
+  async callVerificationVendor(doc, _ocrData) {
     // In production, integrate with:
     // - Onfido
     // - Jumio
