@@ -1,13 +1,23 @@
+const { Pool } = require('pg');
 const { createClient } = require('@supabase/supabase-js');
 const env = require('./env');
 
-// Supabase client for general use (with anon key)
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+// PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
-// Supabase admin client (with service role key - use carefully!)
-const supabaseAdmin = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+// Query function for PostgreSQL
+const query = (text, params) => pool.query(text, params);
+
+// Supabase clients (keeping for backward compatibility)
+const supabase = createClient(env.SUPABASE_URL || 'https://placeholder.supabase.co', env.SUPABASE_ANON_KEY || 'placeholder');
+const supabaseAdmin = createClient(env.SUPABASE_URL || 'https://placeholder.supabase.co', env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder');
 
 module.exports = {
+  pool,
+  query,
   supabase,
-  supabaseAdmin
+  supabaseAdmin,
 };
