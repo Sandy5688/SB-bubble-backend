@@ -149,7 +149,7 @@ app.use(errorHandler);
 module.exports = app;
 
 // KYC, Auth & Payment Routes
-const authRoutes = require('./routes/auth/auth.routes');
+const authRoutes = require('./routes/auth.routes');
 const kycRoutes = require('./routes/kyc/kyc.routes');
 const paymentRoutes = require('./routes/payment/payment.routes');
 
