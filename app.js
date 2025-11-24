@@ -114,7 +114,6 @@ app.use('/api/v1', (req, res, next) => {
   
   validateHmacSignature(req, res, next);
 });
-});
 
 // ===========================================
 // 8. REGION DETECTION (NEW - RUNS ON EVERY REQUEST)
