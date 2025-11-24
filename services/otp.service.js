@@ -1,13 +1,23 @@
 const crypto = require('crypto');
 const { query } = require('../config/database');
 const { createLogger } = require('../config/monitoring');
-const twilio = require('twilio');
-const sgMail = require('@sendgrid/mail');
 
 const logger = createLogger('otp-service');
 
-const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+let twilioClient = null;
+let sgMail = null;
+
+// Initialize Twilio only if credentials exist
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  const twilio = require('twilio');
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+}
+
+// Initialize SendGrid only if API key exists
+if (process.env.SENDGRID_API_KEY) {
+  sgMail = require('@sendgrid/mail');
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
@@ -22,6 +32,11 @@ const hashOTP = (otp) => {
 
 const sendSMS = async (phoneNumber, otp, context = 'verification') => {
   try {
+    if (!twilioClient) {
+      logger.warn('Twilio not configured - SMS not sent');
+      return true; // Return true in dev to not block flow
+    }
+
     const message = `Your verification code for Bubble is ${otp}. Valid for ${OTP_EXPIRY_MINUTES} minutes. We requested this for ${context}. If you didn't request this, contact support.`;
 
     await twilioClient.messages.create({
@@ -40,6 +55,11 @@ const sendSMS = async (phoneNumber, otp, context = 'verification') => {
 
 const sendEmail = async (email, otp, context = 'verification') => {
   try {
+    if (!sgMail) {
+      logger.warn('SendGrid not configured - Email not sent');
+      return true; // Return true in dev to not block flow
+    }
+
     const msg = {
       to: email,
       from: {
