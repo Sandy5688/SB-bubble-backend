@@ -181,7 +181,7 @@ const deleteAccountImmediately = async (req, res) => {
       // 7. Log deletion request
       await query(
         `INSERT INTO data_deletion_requests 
-         (user_id, reason, status, requested_at, completed_at)
+         (user_id, request_reason, status, requested_at, completed_at)
          VALUES ($1, 'Immediate deletion', 'completed', NOW(), NOW())`,
         [userId]
       );
@@ -215,7 +215,7 @@ const getDeletionStatus = async (req, res) => {
     const userId = req.userId;
 
     const result = await query(
-      `SELECT id, status, reason, requested_at, completed_at
+      `SELECT id, status, request_reason as reason, requested_at, completed_at
        FROM data_deletion_requests
        WHERE user_id = $1
        ORDER BY requested_at DESC
