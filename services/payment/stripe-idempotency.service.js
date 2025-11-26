@@ -46,7 +46,7 @@ const createSetupIntentIdempotent = async (customerId, userId) => {
 /**
  * Create subscription with idempotency
  */
-const createSubscriptionIdempotent = async (customerId, priceId, userId) => {
+const createSubscriptionIdempotent = async (customerId, _priceId, userId) => {
   const idempotencyKey = `subscription_${userId}_${priceId}`;
   
   try {
