@@ -1,5 +1,6 @@
 const kycService = require('../../services/kyc/kyc.service');
 const { createLogger } = require('../../config/monitoring');
+const { validateUpload, generateSecureKey } = require('../../services/storage/upload-validator');
 const logger = createLogger('kyc-controller');
 const { query } = require('../../config/database');
 const otpService = require('../../services/otp.service');
@@ -241,3 +242,14 @@ module.exports.submitConsent = submitConsent;
 module.exports.getOptions = getOptions;
 module.exports.getStatus = getStatus;
 module.exports.changeIDType = changeIDType;
+
+// Add validation in getUploadUrl method
+const validation = validateUpload(filename, mimeType, fileSize);
+if (!validation.valid) {
+  return res.status(400).json({ 
+    success: false, 
+    errors: validation.errors 
+  });
+}
+
+const secureKey = generateSecureKey(userId, filename, docType);

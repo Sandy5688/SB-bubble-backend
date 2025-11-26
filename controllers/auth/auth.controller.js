@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { query } = require('../../config/database');
+const tokenService = require('../../services/auth/token.service');
+const appleJwks = require('../../services/auth/apple-jwks.service');
 const { generateTokenPair, verifyRefreshToken, revokeRefreshToken } = require('../../utils/jwt.util');
 const googleAuthService = require('../../services/auth/google.auth.service');
 const { createLogger } = require('../../config/monitoring');

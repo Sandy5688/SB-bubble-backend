@@ -1,6 +1,7 @@
 const { query } = require('../../config/database');
 const { createLogger } = require('../../config/monitoring');
 const virusScanner = require('../../services/virus-scanner.service');
+const fraudDetection = require('../../services/kyc/fraud-detection.service');
 
 const logger = createLogger('kyc-processor');
 
@@ -78,6 +79,16 @@ class KYCProcessor {
 
       // Step 3: Validate ID expiry
       const expiryCheck = await this.validateExpiry(ocrData);
+
+      // Fraud detection
+      const fraudCheck = await fraudDetection.runFraudChecks(
+        doc.session_id, doc.user_id, ocrData,
+        "user@example.com", null, "unknown"
+      );
+      if (fraudCheck.isFraud) {
+        await this.markSessionRejected(doc.session_id, `Fraud: ${fraudCheck.fraudFlags.join(", ")}`);
+        return;
+      }
 
       if (expiryCheck.expired) {
         await this.markDocumentFailed(doc.id, 'ID expired');
@@ -183,3 +194,15 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 module.exports = processor;
+
+// Add fraud check in processDocument method after OCR
+  doc.session_id,
+  doc.user_id, 
+  ocrData,
+  userEmail,
+  userPhone,
+  userIP
+);
+
+  return;
+}
