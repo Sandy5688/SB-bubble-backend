@@ -130,12 +130,14 @@ const authRoutes = require('./routes/auth/auth.routes');
 const accountRoutes = require('./routes/auth/account.routes');
 const magicRoutes = require('./routes/auth/magic.routes');
 const kycRoutes = require('./routes/kyc/kyc.routes');
+const adminKycRoutes = require('./routes/admin/kyc.routes');
 const paymentRoutes = require("./routes/payment/payment.routes");
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/account', accountRoutes);
 app.use('/api/v1/auth/magic', magicRoutes);
 app.use('/api/v1/kyc', kycRoutes);
+app.use('/api/v1/admin', adminKycRoutes);
 app.use('/api/v1/payment', paymentRoutes);
 
 // API routes

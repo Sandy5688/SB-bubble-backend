@@ -8,7 +8,6 @@ const { validateApiKey } = require('../middleware/security');
 // Import route modules
 const authRoutes = require('./auth/auth.routes');
 const userRoutes = require('./user.routes');
-const fileRoutes = require('./file.routes');
 const paymentRoutes = require('./payment/payment.routes');
 // const messagingRoutes = require('./messaging.routes');
 const aiRoutes = require('./ai.routes');
@@ -24,7 +23,6 @@ router.get('/', (req, res) => {
       health: '/api/v1/health',
       auth: '/api/v1/auth',
       users: '/api/v1/user',
-      files: '/api/v1/files',
       payments: '/api/v1/pay',
       messaging: '/api/v1/msg',
       ai: '/api/v1/ai',
@@ -41,7 +39,6 @@ router.use('/auth', authRoutes);
 
 // Protected routes (require BOTH API key AND JWT authentication)
 router.use('/user', validateApiKey, authenticate, userRoutes);
-router.use('/files', validateApiKey, authenticate, fileRoutes);
 router.use('/pay', validateApiKey, authenticate, paymentRoutes);
 // router.use("/msg", messagingRoutes););
 router.use('/ai', validateApiKey, authenticate, aiRoutes);
