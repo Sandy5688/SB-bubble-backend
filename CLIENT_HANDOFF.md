@@ -516,3 +516,23 @@ The codebase is clean, well-documented, and follows industry best practices. Ext
 
 This is optional - production is already verified working.
 
+
+---
+
+## 📊 DATABASE SCHEMA
+
+**Location:** `database/schema.sql`  
+**Total Tables:** 28  
+**Last Updated:** November 26, 2025
+
+All tables are documented in `database/schema.sql` (375 lines), exported directly from production database.
+
+### Verify Tables:
+```bash
+# Check schema exists
+cat database/schema.sql | grep "CREATE TABLE" | wc -l
+# Output: 28
+
+# Search for specific tables
+grep "kyc_sessions\|otp_codes\|subscriptions" database/schema.sql
+```
