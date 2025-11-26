@@ -49,6 +49,7 @@
     "ioredis": "^5.8.2",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.2.0",
     "maxmind": "^4.3.11",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
