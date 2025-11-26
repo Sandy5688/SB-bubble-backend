@@ -92,3 +92,32 @@ module.exports = {
   authenticate,
   requireValidKYC,
 };
+
+/**
+ * Admin authentication middleware
+ */
+const authenticateAdmin = async (req, res, next) => {
+  try {
+    const adminKey = req.headers['x-admin-key'];
+    
+    if (!adminKey) {
+      return res.status(401).json({ error: 'Admin key required' });
+    }
+
+    // Verify admin key
+    if (adminKey !== process.env.ADMIN_API_KEY) {
+      logger.warn('Invalid admin key attempt', { ip: req.ip });
+      return res.status(403).json({ error: 'Invalid admin key' });
+    }
+
+    // Optionally get admin email from header
+    req.adminEmail = req.headers['x-admin-email'] || 'system';
+    
+    next();
+  } catch (error) {
+    logger.error('Admin authentication failed', { error: error.message });
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+};
+
+module.exports.authenticateAdmin = authenticateAdmin;
