@@ -1,298 +1,375 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- ================================================================
+-- BUBBLE BACKEND API - COMPLETE DATABASE SCHEMA
+-- Generated: 2025-11-26T05:39:48.881Z
+-- Total Tables: 28
+-- ================================================================
 
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.jwt_secret" TO 'your-jwt-secret';
-
--- =====================================================
--- USERS & AUTHENTICATION
--- =====================================================
-
--- Users table (extends Supabase auth.users)
-CREATE TABLE IF NOT EXISTS public.users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  full_name VARCHAR(255),
-  avatar_url TEXT,
-  role VARCHAR(50) DEFAULT 'user',
-  is_active BOOLEAN DEFAULT true,
-  last_login_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ
-);
-
--- User profiles
-CREATE TABLE IF NOT EXISTS public.user_profiles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  phone VARCHAR(20),
-  address TEXT,
-  city VARCHAR(100),
-  country VARCHAR(100),
-  postal_code VARCHAR(20),
-  preferences JSONB DEFAULT '{}',
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Sessions table
-CREATE TABLE IF NOT EXISTS public.sessions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  token TEXT NOT NULL,
-  refresh_token TEXT,
-  ip_address INET,
-  user_agent TEXT,
-  expires_at TIMESTAMPTZ NOT NULL,
-  revoked_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- =====================================================
--- WORKFLOW ENGINE
--- =====================================================
-
--- Workflow runs
-CREATE TABLE IF NOT EXISTS public.workflow_runs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id),
-  workflow_name VARCHAR(255) NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending', -- pending, running, completed, failed
-  input_data JSONB,
-  output_data JSONB,
-  error_message TEXT,
-  started_at TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Workflow actions
-CREATE TABLE IF NOT EXISTS public.workflow_actions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workflow_run_id UUID REFERENCES public.workflow_runs(id) ON DELETE CASCADE,
-  action_type VARCHAR(100) NOT NULL,
-  action_name VARCHAR(255),
-  status VARCHAR(50) DEFAULT 'pending',
-  input_data JSONB,
-  output_data JSONB,
-  error_message TEXT,
-  retry_count INTEGER DEFAULT 0,
-  started_at TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Workflow logs
-CREATE TABLE IF NOT EXISTS public.workflow_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workflow_run_id UUID REFERENCES public.workflow_runs(id) ON DELETE CASCADE,
-  action_id UUID REFERENCES public.workflow_actions(id) ON DELETE SET NULL,
-  level VARCHAR(20) DEFAULT 'info', -- debug, info, warning, error
-  message TEXT NOT NULL,
-  metadata JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- =====================================================
--- FILE MANAGEMENT
--- =====================================================
-
--- Files table
-CREATE TABLE IF NOT EXISTS public.files (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id),
-  filename VARCHAR(255) NOT NULL,
-  original_filename VARCHAR(255) NOT NULL,
-  mime_type VARCHAR(100),
-  size_bytes BIGINT,
+-- Table: archived_exports
+CREATE TABLE IF NOT EXISTS archived_exports (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  export_type TEXT NOT NULL,
   s3_key TEXT NOT NULL,
-  s3_bucket VARCHAR(255) NOT NULL,
-  storage_url TEXT,
-  is_public BOOLEAN DEFAULT false,
-  virus_scan_status VARCHAR(50) DEFAULT 'pending', -- pending, clean, infected, error
-  virus_scan_result JSONB,
-  expires_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  expires_at TIMESTAMP WITH TIME ZONE
 );
 
--- File metadata
-CREATE TABLE IF NOT EXISTS public.file_metadata (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  file_id UUID REFERENCES public.files(id) ON DELETE CASCADE,
-  metadata_type VARCHAR(100), -- extracted, parsed, analyzed
-  data JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- Table: billing_cycles
+CREATE TABLE IF NOT EXISTS billing_cycles (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  subscription_id UUID NOT NULL,
+  period_start TIMESTAMP WITH TIME ZONE NOT NULL,
+  period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+  amount_due INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  paid_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Parsed data (from documents)
-CREATE TABLE IF NOT EXISTS public.parsed_data (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  file_id UUID REFERENCES public.files(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES public.users(id),
-  parsed_content JSONB NOT NULL,
-  structured_data JSONB,
-  confidence_score DECIMAL(5,2),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Table: data_deletion_requests
+CREATE TABLE IF NOT EXISTS data_deletion_requests (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  request_reason TEXT,
+  status TEXT DEFAULT 'pending'::text,
+  requested_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  processed_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  reason TEXT
 );
 
--- =====================================================
--- MESSAGING
--- =====================================================
-
--- Messages table
-CREATE TABLE IF NOT EXISTS public.messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id),
-  message_type VARCHAR(50) NOT NULL, -- email, sms
-  recipient VARCHAR(255) NOT NULL,
-  subject VARCHAR(500),
-  body TEXT NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending', -- pending, sent, failed, delivered
-  provider VARCHAR(50), -- sendgrid, twilio
-  provider_message_id VARCHAR(255),
-  error_message TEXT,
-  retry_count INTEGER DEFAULT 0,
-  sent_at TIMESTAMPTZ,
-  delivered_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- Table: deletion_queue
+CREATE TABLE IF NOT EXISTS deletion_queue (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'::text,
+  scheduled_for TIMESTAMP WITH TIME ZONE NOT NULL,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Message logs
-CREATE TABLE IF NOT EXISTS public.message_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  message_id UUID REFERENCES public.messages(id) ON DELETE CASCADE,
-  event_type VARCHAR(100), -- queued, sent, delivered, bounced, opened, clicked
-  event_data JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- Table: email_tokens
+CREATE TABLE IF NOT EXISTS email_tokens (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  token_hash TEXT NOT NULL,
+  token_type TEXT NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- =====================================================
--- PAYMENTS
--- =====================================================
-
--- Transactions table
-CREATE TABLE IF NOT EXISTS public.transactions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id),
-  transaction_type VARCHAR(50) NOT NULL, -- payment, refund, payout
-  payment_provider VARCHAR(50) NOT NULL, -- stripe, paypal
-  provider_transaction_id VARCHAR(255),
-  amount DECIMAL(12,2) NOT NULL,
-  currency VARCHAR(3) DEFAULT 'USD',
-  status VARCHAR(50) DEFAULT 'pending', -- pending, completed, failed, refunded
-  description TEXT,
-  metadata JSONB,
-  idempotency_key VARCHAR(255) UNIQUE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Table: gdpr_erasure_logs
+CREATE TABLE IF NOT EXISTS gdpr_erasure_logs (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  email TEXT,
+  data_deleted JSONB NOT NULL,
+  deleted_by UUID,
+  reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Payment events (webhook events)
-CREATE TABLE IF NOT EXISTS public.payment_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  transaction_id UUID REFERENCES public.transactions(id) ON DELETE SET NULL,
-  provider VARCHAR(50) NOT NULL,
-  event_type VARCHAR(100) NOT NULL,
-  event_id VARCHAR(255) UNIQUE,
-  payload JSONB NOT NULL,
-  processed BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- =====================================================
--- AUDIT TRAIL
--- =====================================================
-
--- Audit trail
-CREATE TABLE IF NOT EXISTS public.audit_trail (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id),
-  action VARCHAR(100) NOT NULL,
-  resource_type VARCHAR(100),
-  resource_id UUID,
-  changes JSONB,
-  ip_address INET,
+-- Table: kyc_audit_logs
+CREATE TABLE IF NOT EXISTS kyc_audit_logs (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  kyc_session_id UUID,
+  user_id UUID NOT NULL,
+  action TEXT NOT NULL,
+  action_status TEXT DEFAULT 'success'::text,
+  details JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ip_address TEXT,
   user_agent TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  endpoint TEXT,
+  timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- =====================================================
--- SYSTEM CONFIGURATION
--- =====================================================
-
--- System config
-CREATE TABLE IF NOT EXISTS public.system_config (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  key VARCHAR(255) UNIQUE NOT NULL,
-  value JSONB NOT NULL,
-  description TEXT,
-  is_public BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- Table: kyc_documents
+CREATE TABLE IF NOT EXISTS kyc_documents (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  kyc_session_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  doc_type TEXT NOT NULL,
+  s3_key TEXT NOT NULL,
+  s3_bucket TEXT NOT NULL,
+  s3_url TEXT,
+  file_name TEXT NOT NULL,
+  file_size_bytes BIGINT NOT NULL,
+  file_mime TEXT NOT NULL,
+  file_hash TEXT NOT NULL,
+  scan_status TEXT DEFAULT 'pending'::text,
+  scan_result JSONB,
+  scanned_at TIMESTAMP WITH TIME ZONE,
+  ocr_status TEXT DEFAULT 'pending'::text,
+  ocr_extracted JSONB,
+  ocr_confidence NUMERIC,
+  id_number TEXT,
+  id_expiry TIMESTAMP WITH TIME ZONE,
+  id_issuer_country TEXT,
+  id_holder_name TEXT,
+  id_holder_dob DATE,
+  vendor_verification_status TEXT,
+  vendor_verification_result JSONB,
+  vendor_name TEXT,
+  verified_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  archived_at TIMESTAMP WITH TIME ZONE
 );
 
--- =====================================================
--- INDEXES
--- =====================================================
+-- Table: kyc_sessions
+CREATE TABLE IF NOT EXISTS kyc_sessions (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending_consent'::text,
+  reason TEXT DEFAULT 'standard_verification'::text,
+  workflow_id UUID,
+  consent_timestamp TIMESTAMP WITH TIME ZONE,
+  consent_version TEXT,
+  consent_ip TEXT,
+  consent_user_agent TEXT,
+  otp_verified BOOLEAN DEFAULT false,
+  otp_method TEXT,
+  otp_destination TEXT,
+  selected_id_type TEXT,
+  last_verified_at TIMESTAMP WITH TIME ZONE,
+  expiry_warning_sent_at TIMESTAMP WITH TIME ZONE,
+  rejection_reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT (now() + '30 days'::interval)
+);
 
--- Users indexes
-CREATE INDEX idx_users_email ON public.users(email);
-CREATE INDEX idx_users_role ON public.users(role);
-CREATE INDEX idx_users_deleted_at ON public.users(deleted_at);
+-- Table: login_attempts
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  ip_address TEXT NOT NULL,
+  success BOOLEAN NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- Sessions indexes
-CREATE INDEX idx_sessions_user_id ON public.sessions(user_id);
-CREATE INDEX idx_sessions_token ON public.sessions(token);
-CREATE INDEX idx_sessions_expires_at ON public.sessions(expires_at);
+-- Table: login_events
+CREATE TABLE IF NOT EXISTS login_events (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  login_method TEXT NOT NULL,
+  success BOOLEAN NOT NULL,
+  failure_reason TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  device_fingerprint TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- Workflow indexes
-CREATE INDEX idx_workflow_runs_user_id ON public.workflow_runs(user_id);
-CREATE INDEX idx_workflow_runs_status ON public.workflow_runs(status);
-CREATE INDEX idx_workflow_actions_workflow_run_id ON public.workflow_actions(workflow_run_id);
+-- Table: magic_links
+CREATE TABLE IF NOT EXISTS magic_links (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  token_hash TEXT NOT NULL,
+  user_id UUID,
+  ip_address TEXT,
+  user_agent TEXT,
+  is_used BOOLEAN DEFAULT false,
+  used_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
 
--- Files indexes
-CREATE INDEX idx_files_user_id ON public.files(user_id);
-CREATE INDEX idx_files_s3_key ON public.files(s3_key);
-CREATE INDEX idx_files_deleted_at ON public.files(deleted_at);
+-- Table: magic_login_events
+CREATE TABLE IF NOT EXISTS magic_login_events (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID,
+  magic_link_id UUID,
+  success BOOLEAN NOT NULL,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- Messages indexes
-CREATE INDEX idx_messages_user_id ON public.messages(user_id);
-CREATE INDEX idx_messages_status ON public.messages(status);
+-- Table: otp_attempts
+CREATE TABLE IF NOT EXISTS otp_attempts (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  otp_code_id UUID,
+  user_id UUID,
+  success BOOLEAN DEFAULT false,
+  ip_address TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- Transactions indexes
-CREATE INDEX idx_transactions_user_id ON public.transactions(user_id);
-CREATE INDEX idx_transactions_status ON public.transactions(status);
-CREATE INDEX idx_transactions_idempotency_key ON public.transactions(idempotency_key);
+-- Table: otp_codes
+CREATE TABLE IF NOT EXISTS otp_codes (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  kyc_session_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  otp_hash TEXT NOT NULL,
+  otp_method TEXT NOT NULL,
+  destination TEXT NOT NULL,
+  attempts INTEGER DEFAULT 0,
+  max_attempts INTEGER DEFAULT 5,
+  is_verified BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  verified_at TIMESTAMP WITH TIME ZONE,
+  method TEXT
+);
 
--- Audit trail indexes
-CREATE INDEX idx_audit_trail_user_id ON public.audit_trail(user_id);
-CREATE INDEX idx_audit_trail_resource ON public.audit_trail(resource_type, resource_id);
-CREATE INDEX idx_audit_trail_created_at ON public.audit_trail(created_at);
+-- Table: otp_sessions
+CREATE TABLE IF NOT EXISTS otp_sessions (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  session_type TEXT NOT NULL,
+  otp_verified BOOLEAN DEFAULT false,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- =====================================================
--- TRIGGERS (Updated_at)
--- =====================================================
+-- Table: payment_customers
+CREATE TABLE IF NOT EXISTS payment_customers (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  stripe_customer_id TEXT NOT NULL,
+  billing_email TEXT,
+  billing_consent BOOLEAN DEFAULT false,
+  billing_consent_at TIMESTAMP WITH TIME ZONE,
+  billing_consent_ip TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- Table: payment_events
+CREATE TABLE IF NOT EXISTS payment_events (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID,
+  stripe_event_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  event_data JSONB NOT NULL,
+  processed BOOLEAN DEFAULT false,
+  processed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
 
--- Apply trigger to tables with updated_at
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON public.user_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_workflow_runs_updated_at BEFORE UPDATE ON public.workflow_runs FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_files_updated_at BEFORE UPDATE ON public.files FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_parsed_data_updated_at BEFORE UPDATE ON public.parsed_data FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON public.transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_system_config_updated_at BEFORE UPDATE ON public.system_config FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Table: payment_method_vault
+CREATE TABLE IF NOT EXISTS payment_method_vault (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  stripe_payment_method_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  last_four TEXT,
+  is_default BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: purge_jobs
+CREATE TABLE IF NOT EXISTS purge_jobs (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  job_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  records_processed INTEGER DEFAULT 0,
+  started_at TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: refresh_tokens
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  token_hash TEXT NOT NULL,
+  token_family UUID NOT NULL,
+  ip_address TEXT,
+  user_agent TEXT,
+  device_fingerprint TEXT,
+  device_name TEXT,
+  is_revoked BOOLEAN DEFAULT false,
+  revoked_at TIMESTAMP WITH TIME ZONE,
+  revoke_reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  last_used_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: reset_attempts
+CREATE TABLE IF NOT EXISTS reset_attempts (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  ip_address TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: scanner_logs
+CREATE TABLE IF NOT EXISTS scanner_logs (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  event_type TEXT NOT NULL,
+  details JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: subscriptions
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  stripe_subscription_id TEXT NOT NULL,
+  stripe_price_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  current_period_start TIMESTAMP WITH TIME ZONE NOT NULL,
+  current_period_end TIMESTAMP WITH TIME ZONE NOT NULL,
+  cancel_at_period_end BOOLEAN DEFAULT false,
+  canceled_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: users
+CREATE TABLE IF NOT EXISTS users (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  external_provider TEXT,
+  external_provider_id TEXT,
+  password_hash TEXT,
+  email_verified BOOLEAN DEFAULT false,
+  last_login_at TIMESTAMP WITH TIME ZONE,
+  login_count INTEGER DEFAULT 0,
+  profile_picture_url TEXT,
+  auth_provider_data JSONB,
+  stripe_customer_id TEXT,
+  full_name TEXT,
+  apple_user_identifier TEXT,
+  billing_consent BOOLEAN DEFAULT false,
+  last_billing_consent_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Table: verification_attempts
+CREATE TABLE IF NOT EXISTS verification_attempts (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  kyc_session_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  attempt_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  details JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: virus_quarantine
+CREATE TABLE IF NOT EXISTS virus_quarantine (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  document_id UUID,
+  s3_key TEXT NOT NULL,
+  threat_type TEXT NOT NULL,
+  quarantine_reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Table: virus_scanner_events
+CREATE TABLE IF NOT EXISTS virus_scanner_events (
+  id UUID NOT NULL DEFAULT gen_random_uuid(),
+  document_id UUID,
+  scanner_name TEXT NOT NULL,
+  scan_result TEXT NOT NULL,
+  threats_found JSONB,
+  scan_duration_ms INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
