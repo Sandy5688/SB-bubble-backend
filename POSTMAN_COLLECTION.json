@@ -1,0 +1,483 @@
+{
+  "info": {
+    "name": "Bubble Backend API",
+    "description": "Complete API collection for Bubble Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://bubble-backend-api-production.up.railway.app/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "kyc_session_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "1. Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', response.data.tokens.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signup",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "2. Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', response.data.tokens.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/signin",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "signin"]
+            }
+          }
+        },
+        {
+          "name": "3. Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "4. Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', response.data.tokens.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            }
+          }
+        },
+        {
+          "name": "5. Get CSRF Token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/csrf-token",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "csrf-token"]
+            }
+          }
+        },
+        {
+          "name": "6. Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Magic Link",
+      "item": [
+        {
+          "name": "1. Send Magic Link",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/magic/send",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "magic", "send"]
+            }
+          }
+        },
+        {
+          "name": "2. Verify Magic Link",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refresh_token', response.data.tokens.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"your-magic-token\",\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/magic/verify",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "magic", "verify"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "KYC Verification",
+      "item": [
+        {
+          "name": "1. Start KYC Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('kyc_session_id', response.data.kycSessionId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/kyc/start",
+              "host": ["{{base_url}}"],
+              "path": ["kyc", "start"]
+            }
+          }
+        },
+        {
+          "name": "2. Submit Consent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kycSessionId\": \"{{kyc_session_id}}\",\n  \"consentVersion\": \"1.0\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/kyc/consent",
+              "host": ["{{base_url}}"],
+              "path": ["kyc", "consent"]
+            }
+          }
+        },
+        {
+          "name": "3. Get ID Options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/kyc/options",
+              "host": ["{{base_url}}"],
+              "path": ["kyc", "options"]
+            }
+          }
+        },
+        {
+          "name": "4. Get Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kycSessionId\": \"{{kyc_session_id}}\",\n  \"fileName\": \"passport.jpg\",\n  \"fileType\": \"image/jpeg\",\n  \"idType\": \"passport\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/kyc/upload-url",
+              "host": ["{{base_url}}"],
+              "path": ["kyc", "upload-url"]
+            }
+          }
+        },
+        {
+          "name": "5. Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kycSessionId\": \"{{kyc_session_id}}\",\n  \"method\": \"email\",\n  \"destination\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/kyc/send-otp",
+              "host": ["{{base_url}}"],
+              "path": ["kyc", "send-otp"]
+            }
+          }
+        },
+        {
+          "name": "6. Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kycSessionId\": \"{{kyc_session_id}}\",\n  \"otp\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/kyc/verify-otp",
+              "host": ["{{base_url}}"],
+              "path": ["kyc", "verify-otp"]
+            }
+          }
+        },
+        {
+          "name": "7. Check KYC Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/kyc/status/{{kyc_session_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["kyc", "status", "{{kyc_session_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment",
+      "item": [
+        {
+          "name": "1. Create Stripe Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payment/create-customer",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "create-customer"]
+            }
+          }
+        },
+        {
+          "name": "2. Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priceId\": \"price_xxxxx\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payment/create-subscription",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "create-subscription"]
+            }
+          }
+        },
+        {
+          "name": "3. Get Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/payment/subscription/:subscriptionId",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "subscription", ":subscriptionId"]
+            }
+          }
+        },
+        {
+          "name": "4. Activate Grace Tier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/payment/grace-activate",
+              "host": ["{{base_url}}"],
+              "path": ["payment", "grace-activate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account Management",
+      "item": [
+        {
+          "name": "1. Request Account Deletion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/account/delete/request",
+              "host": ["{{base_url}}"],
+              "path": ["account", "delete", "request"]
+            }
+          }
+        },
+        {
+          "name": "2. Cancel Deletion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/account/delete/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["account", "delete", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "3. Check Deletion Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/account/delete/status",
+              "host": ["{{base_url}}"],
+              "path": ["account", "delete", "status"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
