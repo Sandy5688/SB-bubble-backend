@@ -105,7 +105,7 @@ app.use((req, res, next) => {
 // ===========================================
 app.use('/api/v1', (req, res, next) => {
   const isWebhook = req.path.includes('/webhook');
-  const isAuthRoute = req.path.startsWith("/auth") || req.path.startsWith("/account") || req.path.startsWith("/kyc") || req.path.startsWith("/payment");
+  const isAuthRoute = req.path.startsWith("/auth") || req.path.startsWith("/account") || req.path.startsWith("/kyc") || req.path.startsWith("/payment") || req.path.startsWith("/magic");
   const isHealthRoute = req.path.includes("/health") || req.path.includes("/debug");
   
   if (isAuthRoute || isWebhook || isHealthRoute) {
