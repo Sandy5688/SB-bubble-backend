@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getRedisClient } = require('../config/redis');
-const { createClient } = require('@supabase/supabase-js');
+const { pool } = require('../config/database');
 const AWS = require('aws-sdk');
 const env = require('../config/env');
 const { validateApiKey } = require('../middleware/security');
@@ -48,13 +48,12 @@ router.get('/detailed', validateApiKey, async (req, res) => {
 });
 
 /**
- * Quick database check
+ * Quick database check using PostgreSQL
  */
 async function quickDbCheck() {
   try {
-    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
-    const { error } = await supabase.from('users').select('count').limit(1);
-    return error ? 'unhealthy' : 'healthy';
+    await pool.query('SELECT 1');
+    return 'healthy';
   } catch (error) {
     return 'unhealthy';
   }
@@ -82,19 +81,18 @@ async function performDetailedChecks() {
 }
 
 /**
- * Check database connection
+ * Check database connection using PostgreSQL
  */
 async function checkDatabase() {
   try {
-    const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
     const start = Date.now();
-    const { error } = await supabase.from('users').select('count').limit(1);
+    await pool.query('SELECT 1');
     const responseTime = Date.now() - start;
 
     return {
-      status: error ? 'unhealthy' : 'healthy',
+      status: 'healthy',
       responseTime: `${responseTime}ms`,
-      message: error ? error.message : 'Connected'
+      message: 'Connected'
     };
   } catch (error) {
     return {
