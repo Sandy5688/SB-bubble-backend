@@ -1,11 +1,13 @@
 const { supabase } = require('../../config/supabase');
+const { createLogger } = require('../config/monitoring');
+const logger = createLogger('workflow.job');
 
 /**
  * Execute workflow job
  */
 async function executeWorkflow(workflowId, _inputData) {
   try {
-    console.log(`Executing workflow: ${workflowId}`);
+    logger.info(`Executing workflow: ${workflowId}`);
 
     // Get workflow details
     const { data: workflow, error } = await supabase
@@ -17,7 +19,7 @@ async function executeWorkflow(workflowId, _inputData) {
     if (error) throw error;
 
     // Execute workflow steps
-    console.log(`Workflow ${workflow.name} started`);
+    logger.info(`Workflow ${workflow.name} started`);
 
     // Update workflow status
     await supabase
@@ -25,10 +27,10 @@ async function executeWorkflow(workflowId, _inputData) {
       .update({ status: 'completed' })
       .eq('id', workflowId);
 
-    console.log(`Workflow ${workflowId} completed`);
+    logger.info(`Workflow ${workflowId} completed`);
     return { success: true };
   } catch (error) {
-    console.error(`Workflow ${workflowId} failed:`, error);
+    logger.error(`Workflow ${workflowId} failed:`, error);
     throw error;
   }
 }

@@ -1,4 +1,3 @@
-const { supabase } = require('../config/supabase');
 const redis = require('../config/redis');
 const logger = require('../utils/logger');
 
@@ -26,7 +25,6 @@ class RegionService {
       }
 
       // Query Supabase
-      const query = supabase
         .from('tenant_regions')
         .select('supported_features')
         .eq('country_code', countryCode)
@@ -34,7 +32,6 @@ class RegionService {
 
       if (regionCode) {
         // Check for region-specific first, then country-wide
-        const { data, error } = await supabase
           .from('tenant_regions')
           .select('supported_features')
           .eq('country_code', countryCode)

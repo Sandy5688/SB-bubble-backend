@@ -1,5 +1,4 @@
 const regionService = require('../services/region.service');
-const { supabase } = require('../config/supabase');
 
 /**
  * Example Catalog Controller
@@ -19,7 +18,6 @@ exports.getItems = async (req, res) => {
       regionCode
     );
 
-    let query = supabase
       .from('items')
       .select('*');
 
@@ -59,7 +57,6 @@ exports.getItem = async (req, res) => {
     const { countryCode, regionCode } = req.context;
 
     // Get item
-    const { data: item, error } = await supabase
       .from('items')
       .select('*')
       .eq('id', id)

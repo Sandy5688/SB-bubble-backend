@@ -92,16 +92,6 @@ class KYCProcessor {
         delete ocrData.dateOfBirth;
       }
 
-      // Encrypt sensitive fields
-      if (ocrData.documentNumber) {
-        ocrData.documentNumber_encrypted = encrypt(ocrData.documentNumber);
-        delete ocrData.documentNumber;
-      }
-      if (ocrData.dateOfBirth) {
-        ocrData.dateOfBirth_encrypted = encrypt(ocrData.dateOfBirth);
-        delete ocrData.dateOfBirth;
-      }
-
       if (expiryCheck.expired) {
         await this.markDocumentFailed(doc.id, 'ID expired');
         await this.markSessionRejected(doc.session_id, 'Expired ID');
@@ -211,5 +201,5 @@ module.exports = processor;
 if (process.env.NODE_ENV === 'production' && process.env.START_WORKERS === 'true') {
   // Worker will start automatically
 } else {
-  module.exports = { start: () => console.log('Worker disabled') };
+  module.exports = { start: () => logger.info('Worker disabled') };
 }

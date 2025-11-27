@@ -1,4 +1,3 @@
-const { supabase } = require('../config/supabase');
 
 /**
  * Auth Service
@@ -7,7 +6,6 @@ const { supabase } = require('../config/supabase');
 
 const signUp = async ({ email, password, firstName, lastName }) => {
   // Create auth user
-  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
   });
@@ -15,7 +13,6 @@ const signUp = async ({ email, password, firstName, lastName }) => {
   if (authError) throw authError;
 
   // Create user profile
-  const { data: profile, error: profileError } = await supabase
     .from('users')
     .insert([
       {
@@ -34,7 +31,6 @@ const signUp = async ({ email, password, firstName, lastName }) => {
 };
 
 const signIn = async ({ email, password }) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -44,19 +40,16 @@ const signIn = async ({ email, password }) => {
 };
 
 const signOut = async (_token) => {
-  const { error } = await supabase.auth.signOut();
   if (error) throw error;
   return { success: true };
 };
 
 const resetPassword = async ({ email }) => {
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
   if (error) throw error;
   return { success: true };
 };
 
 const getUser = async (userId) => {
-  const { data, error } = await supabase
     .from('users')
     .select('*')
     .eq('id', userId)

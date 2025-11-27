@@ -71,5 +71,5 @@ module.exports = queues.externalInteraction;
 if (process.env.NODE_ENV === 'production' && process.env.START_WORKERS === 'true') {
   // Worker will start automatically
 } else {
-  module.exports = { start: () => console.log('Worker disabled') };
+  module.exports = { start: () => logger.info('Worker disabled') };
 }
