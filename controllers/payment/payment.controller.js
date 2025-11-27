@@ -3,6 +3,7 @@ const { query } = require('../../config/database');
 const { createLogger } = require('../../config/monitoring');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
+const stripeIdempotency = require('../../services/payment/stripe-idempotency.service');
 const logger = createLogger('payment-controller');
 
 const createCustomer = async (req, res) => {
@@ -215,3 +216,23 @@ const recordBillingConsent = async (req, res) => {
 };
 
 module.exports.recordBillingConsent = recordBillingConsent;
+
+const activateGraceTier = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const tierService = require('../../services/payment/subscription-tier.service');
+
+    const result = await tierService.activateGraceTier(userId);
+
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: result.reason });
+    }
+
+    res.json({ success: true, tier: result.tier, message: 'Grace tier activated' });
+  } catch (error) {
+    logger.error('Grace tier activation failed', { error: error.message });
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+module.exports.activateGraceTier = activateGraceTier;

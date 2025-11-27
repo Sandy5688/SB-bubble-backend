@@ -5,7 +5,10 @@ const { authenticate } = require('../../middleware/auth.middleware');
 const { requireValidKYC } = require('../../middleware/kyc.middleware');
 const { verifyStripeWebhook, checkDuplicateEvent } = require('../../middleware/stripe-webhook.middleware');
 
-// All payment routes require authentication + valid KYC
+// Grace tier (no KYC required)
+router.post('/grace-activate', authenticate, paymentController.activateGraceTier);
+
+// All other payment routes require authentication + valid KYC
 router.use(authenticate);
 router.use(requireValidKYC);
 
@@ -15,10 +18,6 @@ router.post('/add-payment-method', paymentController.addPaymentMethod);
 router.post('/create-subscription', paymentController.createSubscription);
 router.post('/cancel-subscription/:subscriptionId', paymentController.cancelSubscription);
 router.get('/subscription/:subscriptionId', paymentController.getSubscription);
-
-// Grace tier activation (no KYC required for this one)
-// TODO: Implement activateGraceTier in controller
-// router.post('/grace-activate', authenticate, paymentController.activateGraceTier);
 
 // Webhooks (no auth/KYC required - verified by signature)
 router.post('/webhook', 
