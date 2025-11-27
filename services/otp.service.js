@@ -118,7 +118,7 @@ const createAndSendOTP = async (userId, method, destination, context = 'verifica
     // Store OTP
     const result = await query(
       `INSERT INTO otp_codes (
-        user_id, kyc_session_id, otp_hash, method, destination, 
+        user_id, kyc_session_id, otp_hash, otp_method, destination, 
         expires_at, attempts, created_at
       )
        VALUES ($1, $2, $3, $4, $5, NOW() + INTERVAL '10 minutes', 0, NOW())
