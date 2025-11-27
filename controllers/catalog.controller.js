@@ -1,103 +1,74 @@
-const regionService = require('../services/region.service');
+const { query } = require('../config/database');
+const { createLogger } = require('../config/monitoring');
+
+const logger = createLogger('catalog-controller');
 
 /**
- * Example Catalog Controller
- * Demonstrates region-based filtering
+ * Get catalog items
  */
-
-/**
- * Get catalog items (region-filtered)
- */
-exports.getItems = async (req, res) => {
+const getItems = async (req, res) => {
   try {
-    const { countryCode, regionCode } = req.context;
-
-    // Method 1: Using Supabase with region filter
-    const supportedFeatures = await regionService.getSupportedFeatures(
-      countryCode, 
-      regionCode
-    );
-
-      .from('items')
-      .select('*');
-
-    if (supportedFeatures.length > 0) {
-      query = query.in('internal_feature_id', supportedFeatures);
+    const { category, limit = 50 } = req.query;
+    
+    let sql = 'SELECT * FROM items WHERE 1=1';
+    const params = [];
+    
+    if (category) {
+      params.push(category);
+      sql += ` AND category = $${params.length}`;
     }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
+    
+    params.push(limit);
+    sql += ` LIMIT $${params.length}`;
+    
+    const result = await query(sql, params);
+    
     res.json({
-      status: 'success',
-      data: {
-        items: data,
-        region: {
-          country: countryCode,
-          region: regionCode,
-          filteredCount: data.length
-        }
-      }
+      success: true,
+      data: result.rows
     });
   } catch (error) {
+    logger.error('Get items failed', { error: error.message });
     res.status(500).json({
-      status: 'error',
-      message: error.message
+      success: false,
+      error: 'Failed to fetch items'
     });
   }
 };
 
 /**
- * Get single item (check region availability)
+ * Get single item
  */
-exports.getItem = async (req, res) => {
+const getItem = async (req, res) => {
   try {
     const { id } = req.params;
-    const { countryCode, regionCode } = req.context;
-
-    // Get item
-      .from('items')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    if (!item) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Item not found'
-      });
-    }
-
-    // Check if available in region
-    const isAvailable = await regionService.isFeatureAvailable(
-      item.internal_feature_id,
-      countryCode,
-      regionCode
+    
+    const result = await query(
+      'SELECT * FROM items WHERE id = $1',
+      [id]
     );
-
-    if (!isAvailable) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'This item is not available in your region',
-        region: {
-          country: countryCode,
-          region: regionCode
-        }
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Item not found'
       });
     }
-
+    
     res.json({
-      status: 'success',
-      data: item
+      success: true,
+      data: result.rows[0]
     });
   } catch (error) {
+    logger.error('Get item failed', { error: error.message });
     res.status(500).json({
-      status: 'error',
-      message: error.message
+      success: false,
+      error: 'Failed to fetch item'
     });
   }
 };
 
-module.exports = exports;
+module.exports = {
+  getItems,
+  getItem
+};

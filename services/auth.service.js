@@ -1,68 +1,48 @@
+const { query } = require('../config/database');
+const bcrypt = require('bcryptjs');
+const { createLogger } = require('../config/monitoring');
+
+const logger = createLogger('auth-service');
 
 /**
- * Auth Service
- * Handles authentication operations with Supabase
+ * Register new user
  */
-
-const signUp = async ({ email, password, firstName, lastName }) => {
-  // Create auth user
-    email,
-    password,
-  });
-
-  if (authError) throw authError;
-
-  // Create user profile
-    .from('users')
-    .insert([
-      {
-        id: authData.user.id,
-        email,
-        first_name: firstName,
-        last_name: lastName,
-      },
-    ])
-    .select()
-    .single();
-
-  if (profileError) throw profileError;
-
-  return { user: authData.user, profile };
+const registerUser = async (email, password, name) => {
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const result = await query(
+      `INSERT INTO users (email, password_hash, name, created_at)
+       VALUES ($1, $2, $3, NOW())
+       RETURNING id, email, name, created_at`,
+      [email, hashedPassword, name]
+    );
+    
+    return result.rows[0];
+  } catch (error) {
+    logger.error('User registration failed', { error: error.message });
+    throw error;
+  }
 };
 
-const signIn = async ({ email, password }) => {
-    email,
-    password,
-  });
-
-  if (error) throw error;
-  return data;
-};
-
-const signOut = async (_token) => {
-  if (error) throw error;
-  return { success: true };
-};
-
-const resetPassword = async ({ email }) => {
-  if (error) throw error;
-  return { success: true };
-};
-
-const getUser = async (userId) => {
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (error) throw error;
-  return data;
+/**
+ * Find user by email
+ */
+const findUserByEmail = async (email) => {
+  try {
+    const result = await query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    
+    return result.rows[0] || null;
+  } catch (error) {
+    logger.error('Find user failed', { error: error.message });
+    throw error;
+  }
 };
 
 module.exports = {
-  signUp,
-  signIn,
-  signOut,
-  resetPassword,
-  getUser,
+  registerUser,
+  findUserByEmail
 };
