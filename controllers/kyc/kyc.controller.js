@@ -245,3 +245,62 @@ module.exports.getOptions = getOptions;
 module.exports.getStatus = getStatus;
 module.exports.changeIDType = changeIDType;
 
+
+/**
+ * Approve KYC (with fraud detection)
+ */
+const approveKYC = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    // Get session and documents
+    const session = await query(
+      'SELECT * FROM kyc_sessions WHERE id = $1',
+      [sessionId]
+    );
+    
+    if (session.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Session not found' });
+    }
+    
+    const userId = session.rows[0].user_id;
+    
+    // Get OCR data from documents
+    const docs = await query(
+      'SELECT ocr_extracted FROM kyc_documents WHERE kyc_session_id = $1',
+      [sessionId]
+    );
+    
+    if (docs.rows.length > 0 && docs.rows[0].ocr_extracted) {
+      const ocrData = JSON.parse(docs.rows[0].ocr_extracted);
+      
+      // RUN FRAUD DETECTION
+      const duplicateCheck = await fraudDetection.checkDuplicateID(
+        ocrData.documentNumber,
+        ocrData.documentType,
+        userId
+      );
+      
+      if (duplicateCheck.isDuplicate) {
+        return res.status(400).json({
+          success: false,
+          error: 'Duplicate document detected',
+          reason: duplicateCheck.reason
+        });
+      }
+    }
+    
+    // Approve the session
+    await query(
+      `UPDATE kyc_sessions SET status = 'approved', verified_at = NOW() WHERE id = $1`,
+      [sessionId]
+    );
+    
+    res.json({ success: true, message: 'KYC approved' });
+  } catch (error) {
+    logger.error('KYC approval failed', { error: error.message });
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+module.exports.approveKYC = approveKYC;
