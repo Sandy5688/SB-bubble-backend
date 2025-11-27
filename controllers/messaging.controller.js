@@ -1,34 +1,72 @@
-/**
- * Messaging Controller
- * Handles email and SMS operations
- */
+const messagingService = require('../services/messaging.service');
+const { createLogger } = require('../config/monitoring');
 
+const logger = createLogger('messaging-controller');
+
+/**
+ * Send email
+ */
 const sendEmail = async (req, res) => {
   try {
-    // TODO: Implement SendGrid email sending
+    const userId = req.user?.id || req.userId;
+    const { recipient, subject, body, htmlBody } = req.body;
+
+    if (!recipient || !subject || !body) {
+      return res.status(400).json({
+        success: false,
+        error: 'recipient, subject, and body are required'
+      });
+    }
+
+    const result = await messagingService.sendEmail(userId, recipient, subject, body, htmlBody);
+
     res.json({
-      status: 'success',
-      message: 'Email functionality not yet implemented'
+      success: true,
+      data: {
+        messageId: result.id,
+        status: result.status,
+        sentAt: result.sent_at
+      }
     });
   } catch (error) {
+    logger.error('Send email failed', { error: error.message });
     res.status(500).json({
-      status: 'error',
-      message: error.message
+      success: false,
+      error: error.message
     });
   }
 };
 
+/**
+ * Send SMS
+ */
 const sendSMS = async (req, res) => {
   try {
-    // TODO: Implement Twilio SMS sending
+    const userId = req.user?.id || req.userId;
+    const { recipient, body } = req.body;
+
+    if (!recipient || !body) {
+      return res.status(400).json({
+        success: false,
+        error: 'recipient and body are required'
+      });
+    }
+
+    const result = await messagingService.sendSMS(userId, recipient, body);
+
     res.json({
-      status: 'success',
-      message: 'SMS functionality not yet implemented'
+      success: true,
+      data: {
+        messageId: result.id,
+        status: result.status,
+        sentAt: result.sent_at
+      }
     });
   } catch (error) {
+    logger.error('Send SMS failed', { error: error.message });
     res.status(500).json({
-      status: 'error',
-      message: error.message
+      success: false,
+      error: error.message
     });
   }
 };
