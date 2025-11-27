@@ -1,138 +1,477 @@
-# API Documentation
+# 🚀 Bubble Backend API Documentation
 
-## Overview
+**Base URL:** `https://bubble-backend-api-production.up.railway.app/api/v1`
 
-The Bubble Backend API provides a comprehensive REST API for integrating with Bubble.io applications. It includes authentication, file management, payments, messaging, AI capabilities, and workflow orchestration.
+---
 
-## Base URL
+## 🔐 Authentication
 
-- **Development**: `http://localhost:3000/api/v1`
-- **Production**: `https://api.yourdomain.com/api/v1`
+### Register User
+```http
+POST /auth/signup
+Content-Type: application/json
 
-## Authentication
-
-All protected endpoints require two headers:
-
-1. **API Key** (Internal): `x-api-key: your-internal-api-key`
-2. **Bearer Token** (User): `Authorization: Bearer <access_token>`
-
-### Getting Started
-
-1. Sign up for an account: `POST /auth/signup`
-2. Sign in to get access token: `POST /auth/signin`
-3. Use access token in subsequent requests
-
-## Interactive Documentation
-
-- **Swagger UI**: `http://localhost:3000/api/v1/api-docs`
-- **OpenAPI JSON**: `http://localhost:3000/api/v1/api-docs.json`
-- **Postman Collection**: Import `docs/postman_collection.json`
-
-## Endpoints Overview
-
-### Authentication (`/auth`)
-
-- `POST /auth/signup` - Register new user
-- `POST /auth/signin` - Sign in user
-- `POST /auth/signout` - Sign out user
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/reset-password` - Request password reset
-- `GET /auth/me` - Get current user
-
-### User Management (`/user`)
-
-- `GET /user/profile` - Get user profile
-- `PUT /user/profile` - Update user profile
-- `GET /user/stats` - Get user statistics
-- `DELETE /user/deactivate` - Deactivate account
-
-### File Management (`/files`)
-
-- `POST /files/upload-url` - Get presigned upload URL
-- `POST /files/confirm` - Confirm file upload
-- `GET /files` - List user files
-- `GET /files/:fileId` - Get file details
-- `GET /files/:fileId/download` - Get download URL
-- `DELETE /files/:fileId` - Delete file
-
-### Payments (`/pay`)
-
-- `POST /pay/stripe/create` - Create Stripe payment
-- `POST /pay/paypal/create` - Create PayPal payment
-- `POST /pay/confirm` - Confirm payment
-- `POST /pay/refund/:transactionId` - Refund payment
-- `GET /pay/transaction/:transactionId` - Get transaction
-- `POST /pay/webhook/stripe` - Stripe webhook handler
-
-### Messaging (`/msg`)
-
-- `POST /msg/email` - Send email
-- `POST /msg/sms` - Send SMS
-- `GET /msg/:messageId` - Get message status
-
-### AI (`/ai`)
-
-- `POST /ai/extract` - Extract data from text
-- `POST /ai/structure` - Structure unstructured data
-- `POST /ai/compare` - Compare datasets
-- `POST /ai/decide` - Make AI-powered decision
-
-### Workflows (`/flow`)
-
-- `POST /flow/create` - Create workflow run
-- `GET /flow` - List user workflows
-- `GET /flow/:workflowId` - Get workflow details
-- `POST /flow/:workflowId/cancel` - Cancel workflow
-- `POST /flow/:workflowId/retry` - Retry workflow
-
-### System (`/health`)
-
-- `GET /health` - Health check endpoint
-
-## Rate Limits
-
-- **General**: 100 requests per 15 minutes
-- **Authentication**: 5 requests per 15 minutes
-- **Payments**: 10 requests per minute
-- **AI**: 20 requests per minute
-
-## Error Handling
-
-All errors follow this format:
-```json
 {
-  "status": "error",
-  "message": "Error description here"
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "firstName": "John",
+  "lastName": "Doe"
 }
 ```
 
-Common HTTP status codes:
-- `200` - Success
-- `201` - Created
-- `400` - Bad Request
-- `401` - Unauthorized
-- `403` - Forbidden
-- `404` - Not Found
-- `429` - Too Many Requests
-- `500` - Internal Server Error
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "emailVerified": false
+    },
+    "tokens": {
+      "accessToken": "jwt...",
+      "refreshToken": "token..."
+    }
+  }
+}
+```
 
-## Webhooks
+---
 
-### Stripe Webhooks
+### Login
+```http
+POST /auth/signin
+Content-Type: application/json
 
-Endpoint: `POST /pay/webhook/stripe`
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!"
+}
+```
 
-Stripe will send webhook events to this endpoint. The signature is automatically verified.
+**Response:** Same as Register
 
-## Testing
+---
 
-Import the Postman collection and configure:
+### Get Current User
+```http
+GET /auth/me
+Authorization: Bearer <accessToken>
+```
 
-1. Set `base_url` variable
-2. Set `api_key` variable
-3. Sign in to get `access_token` (auto-saved)
-4. Test all endpoints
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "fullName": "John Doe",
+    "emailVerified": false,
+    "profilePicture": null,
+    "createdAt": "2025-01-01T00:00:00.000Z",
+    "lastLoginAt": "2025-01-01T00:00:00.000Z"
+  }
+}
+```
 
-## Support
+---
 
-For API support, contact: support@example.com
+### Refresh Token
+```http
+POST /auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "your-refresh-token"
+}
+```
+
+---
+
+### Logout
+```http
+POST /auth/logout
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### Google OAuth
+```http
+GET /auth/google/start
+POST /auth/google/callback
+```
+
+### Apple OAuth
+```http
+GET /auth/apple/start
+POST /auth/apple/callback
+```
+
+---
+
+## 📄 KYC Verification
+
+### Start KYC Session
+```http
+POST /kyc/start
+Authorization: Bearer <accessToken>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "kycSessionId": "uuid",
+    "status": "pending_consent",
+    "next": "consent"
+  }
+}
+```
+
+---
+
+### Submit Consent
+```http
+POST /kyc/consent
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "kycSessionId": "uuid",
+  "consentVersion": "1.0"
+}
+```
+
+---
+
+### Get ID Options
+```http
+GET /kyc/options
+Authorization: Bearer <accessToken>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "idTypes": [
+      {"value": "passport", "label": "Passport"},
+      {"value": "driver_license", "label": "Driver License"},
+      {"value": "national_id", "label": "National ID"}
+    ]
+  }
+}
+```
+
+---
+
+### Get Upload URL (for document upload)
+```http
+POST /kyc/upload-url
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "kycSessionId": "uuid",
+  "fileName": "passport.jpg",
+  "fileType": "image/jpeg",
+  "idType": "passport"
+}
+```
+
+**Note:** Requires AWS S3 configuration
+
+---
+
+### Send OTP
+```http
+POST /kyc/send-otp
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "kycSessionId": "uuid",
+  "method": "email",
+  "destination": "user@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "message": "OTP sent via email",
+    "otpId": "uuid",
+    "expiresAt": "2025-01-01T00:10:00.000Z",
+    "method": "email",
+    "destination": "use***@example.com"
+  }
+}
+```
+
+---
+
+### Verify OTP
+```http
+POST /kyc/verify-otp
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "kycSessionId": "uuid",
+  "otp": "123456"
+}
+```
+
+---
+
+### Check KYC Status
+```http
+GET /kyc/status/:kycSessionId
+Authorization: Bearer <accessToken>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "kycSessionId": "uuid",
+    "status": "pending_upload",
+    "otp_verified": false,
+    "selected_id_type": null,
+    "created_at": "2025-01-01T00:00:00.000Z",
+    "updated_at": "2025-01-01T00:00:00.000Z"
+  }
+}
+```
+
+---
+
+### Change ID Type
+```http
+POST /kyc/change-id-type
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "kycSessionId": "uuid",
+  "idType": "driver_license"
+}
+```
+
+---
+
+## 💳 Payments
+
+### Create Stripe Customer
+```http
+POST /payment/create-customer
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+**Note:** Requires completed KYC verification
+
+---
+
+### Add Payment Method
+```http
+POST /payment/add-payment-method
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "paymentMethodId": "pm_..."
+}
+```
+
+---
+
+### Create Subscription
+```http
+POST /payment/create-subscription
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "priceId": "price_..."
+}
+```
+
+---
+
+### Cancel Subscription
+```http
+POST /payment/cancel-subscription/:subscriptionId
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### Get Subscription
+```http
+GET /payment/subscription/:subscriptionId
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### Activate Grace Tier
+```http
+POST /payment/grace-activate
+Authorization: Bearer <accessToken>
+```
+
+---
+
+## �� Account Management
+
+### Request Account Deletion (30-day grace period)
+```http
+POST /account/delete/request
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### Cancel Deletion
+```http
+POST /account/delete/cancel
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### Immediate Deletion
+```http
+DELETE /account/delete/immediate
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### Check Deletion Status
+```http
+GET /account/delete/status
+Authorization: Bearer <accessToken>
+```
+
+---
+
+## ✨ Magic Link Authentication
+
+### Send Magic Link
+```http
+POST /magic/send
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+---
+
+### Verify Magic Link
+```http
+POST /magic/verify
+Content-Type: application/json
+
+{
+  "token": "magic-link-token"
+}
+```
+
+---
+
+## 🔒 CSRF Token
+
+### Get CSRF Token
+```http
+GET /auth/csrf-token
+```
+
+**Response:**
+```json
+{
+  "csrfToken": "token...",
+  "message": "CSRF token generated successfully"
+}
+```
+
+---
+
+## 🏥 Health Check
+```http
+GET /health
+```
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-01-01T00:00:00.000Z",
+  "uptime": 1234.56,
+  "environment": "production",
+  "version": "1.0.0",
+  "database": "healthy"
+}
+```
+
+---
+
+## ⚠️ Error Responses
+
+All endpoints return errors in this format:
+```json
+{
+  "success": false,
+  "error": "Error message here"
+}
+```
+
+---
+
+## 🔑 Authentication Notes
+
+1. **Access Token:** Valid for 15 minutes
+2. **Refresh Token:** Valid for 7 days
+3. **Token Rotation:** New refresh token issued on each refresh
+4. Include `Authorization: Bearer <token>` header for protected routes
+
+---
+
+## 📱 KYC Flow
+
+1. `POST /kyc/start` → Get session ID
+2. `POST /kyc/consent` → Accept terms
+3. `GET /kyc/options` → Get ID types
+4. `POST /kyc/upload-url` → Get S3 upload URL
+5. Upload document to S3
+6. `POST /kyc/confirm-upload` → Confirm upload
+7. `POST /kyc/send-otp` → Request verification code
+8. `POST /kyc/verify-otp` → Submit code
+9. `GET /kyc/status/:id` → Check status
+
+---
+
+## 🌐 Base URLs
+
+- **Production:** `https://bubble-backend-api-production.up.railway.app/api/v1`
+- **Health Check:** `https://bubble-backend-api-production.up.railway.app/api/v1/health`
+
+---
+
+**Last Updated:** November 27, 2025
