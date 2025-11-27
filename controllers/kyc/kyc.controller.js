@@ -113,7 +113,7 @@ const verifyOTP = async (req, res) => {
       });
     }
 
-    const result = await otpService.verifyOTP(kycSessionId, userId, otp);
+    const result = await otpService.verifyOTP(userId, otp, kycSessionId);
 
     res.json({
       success: true,
