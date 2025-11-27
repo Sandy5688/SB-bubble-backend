@@ -249,11 +249,12 @@ module.exports.changeIDType = changeIDType;
 /**
  * Approve KYC (with fraud detection)
  */
+
 const approveKYC = async (req, res) => {
   try {
     const { sessionId } = req.params;
     
-    // Get session and documents
+    // Get session
     const session = await query(
       'SELECT * FROM kyc_sessions WHERE id = $1',
       [sessionId]
@@ -268,20 +269,6 @@ const approveKYC = async (req, res) => {
     // Get OCR data from documents
     const docs = await query(
       'SELECT ocr_extracted FROM kyc_documents WHERE kyc_session_id = $1',
-
-    // Decrypt sensitive fields when reading
-    if (doc.ocr_extracted) {
-      const parsed = JSON.parse(doc.ocr_extracted);
-      if (parsed.documentNumber_encrypted) {
-        parsed.documentNumber = decrypt(parsed.documentNumber_encrypted);
-        delete parsed.documentNumber_encrypted;
-      }
-      if (parsed.dateOfBirth_encrypted) {
-        parsed.dateOfBirth = decrypt(parsed.dateOfBirth_encrypted);
-        delete parsed.dateOfBirth_encrypted;
-      }
-      doc.ocr_extracted = parsed;
-    }
       [sessionId]
     );
     
@@ -306,7 +293,7 @@ const approveKYC = async (req, res) => {
     
     // Approve the session
     await query(
-      `UPDATE kyc_sessions SET status = 'approved', verified_at = NOW() WHERE id = $1`,
+      'UPDATE kyc_sessions SET status = \'approved\', verified_at = NOW() WHERE id = $1',
       [sessionId]
     );
     
@@ -316,5 +303,4 @@ const approveKYC = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-
 module.exports.approveKYC = approveKYC;
