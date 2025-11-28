@@ -19,7 +19,6 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`🌍 Region Context Layer: Active`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
 
 // Start workers and cron jobs in production
 if (process.env.NODE_ENV === 'production' || process.env.START_WORKERS === 'true') {
@@ -31,6 +30,10 @@ if (process.env.NODE_ENV === 'production' || process.env.START_WORKERS === 'true
     logger.warn('⚠️ Workers/Cron require Redis - skipping', { error: error.message });
   }
 }
+
+});
+
+// Start workers and cron jobs in production
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
