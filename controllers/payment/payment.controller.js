@@ -184,6 +184,17 @@ module.exports.getTransaction = async (req, res) => {
 };
 
 module.exports.stripeWebhook = async (req, res) => {
+  try {
+    const event = req.stripeEvent;
+    
+    // Validate event age (defense in depth)
+    const eventAge = Date.now() - (event.created * 1000);
+    const MAX_EVENT_AGE = 5 * 60 * 1000; // 5 minutes
+    
+    if (eventAge > MAX_EVENT_AGE) {
+      console.warn("Webhook event too old", { eventId: event.id, ageSeconds: Math.floor(eventAge / 1000) });
+      return res.status(400).json({ error: "Event too old" });
+    }
   res.status(501).json({ success: false, message: 'Webhook not implemented yet' });
 };
 
