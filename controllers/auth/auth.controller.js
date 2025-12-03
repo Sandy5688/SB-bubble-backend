@@ -1,13 +1,14 @@
 const bcrypt = require('bcryptjs');
 const { query } = require('../../config/database');
 const tokenService = require('../../services/auth/token.service');
-const appleJwks = require('../../services/auth/apple-jwks.service');
-const { generateTokenPair, verifyRefreshToken, revokeRefreshToken } = require('../../utils/jwt.util');
 const googleAuthService = require('../../services/auth/google.auth.service');
 const { createLogger } = require('../../config/monitoring');
 
 const logger = createLogger('auth-controller');
 
+/**
+ * Register new user
+ */
 const register = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -33,10 +34,9 @@ const register = async (req, res) => {
       [user.id, req.ip, req.get('user-agent')]
     );
 
-    const tokens = await generateTokenPair(user, {
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
+    // Use unified token service
+    const tokens = await tokenService.generateTokenPair({ id: user.id, email: user.email, role: 'user' });
+    await tokenService.storeRefreshToken(user.id, tokens.refreshToken, req.ip, req.get('user-agent'));
 
     logger.info('User registered', { userId: user.id, email });
 
@@ -53,6 +53,9 @@ const register = async (req, res) => {
   }
 };
 
+/**
+ * Login user
+ */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -96,10 +99,9 @@ const login = async (req, res) => {
       [user.id, req.ip, req.get('user-agent')]
     );
 
-    const tokens = await generateTokenPair(user, {
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
+    // Use unified token service
+    const tokens = await tokenService.generateTokenPair({ id: user.id, email: user.email, role: user.role || 'user' });
+    await tokenService.storeRefreshToken(user.id, tokens.refreshToken, req.ip, req.get('user-agent'));
 
     logger.info('User logged in', { userId: user.id });
 
@@ -116,24 +118,34 @@ const login = async (req, res) => {
   }
 };
 
+/**
+ * Refresh token
+ */
 const refresh = async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
-    const tokenData = await verifyRefreshToken(refreshToken);
+    if (!refreshToken) {
+      return res.status(400).json({ success: false, error: 'Refresh token required' });
+    }
 
-    const result = await query('SELECT * FROM users WHERE id = $1', [tokenData.user_id]);
+    // Verify and get user from token service
+    const tokenData = await tokenService.verifyRefreshToken(refreshToken);
+
+    const result = await query('SELECT * FROM users WHERE id = $1', [tokenData.userId]);
 
     if (result.rows.length === 0) {
       return res.status(401).json({ success: false, error: 'User not found' });
     }
 
-    await revokeRefreshToken(refreshToken, 'token_refresh');
+    const user = result.rows[0];
 
-    const tokens = await generateTokenPair(result.rows[0], {
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
+    // Revoke old token (token rotation)
+    await tokenService.revokeRefreshToken(refreshToken, 'token_refresh');
+
+    // Generate new token pair
+    const tokens = await tokenService.generateTokenPair({ id: user.id, email: user.email, role: user.role || 'user' });
+    await tokenService.storeRefreshToken(user.id, tokens.refreshToken, req.ip, req.get('user-agent'));
 
     res.json({ success: true, data: { tokens } });
   } catch (error) {
@@ -142,12 +154,15 @@ const refresh = async (req, res) => {
   }
 };
 
+/**
+ * Logout
+ */
 const logout = async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
     if (refreshToken) {
-      await revokeRefreshToken(refreshToken, 'user_logout');
+      await tokenService.revokeRefreshToken(refreshToken, 'user_logout');
     }
 
     res.json({ success: true, message: 'Logged out successfully' });
@@ -157,6 +172,9 @@ const logout = async (req, res) => {
   }
 };
 
+/**
+ * Google OAuth start
+ */
 const googleStart = async (req, res) => {
   try {
     const authUrl = googleAuthService.getAuthUrl();
@@ -166,6 +184,9 @@ const googleStart = async (req, res) => {
   }
 };
 
+/**
+ * Google OAuth callback
+ */
 const googleCallback = async (req, res) => {
   try {
     const { code } = req.body;
@@ -182,22 +203,12 @@ const googleCallback = async (req, res) => {
   }
 };
 
-module.exports = {
-  register,
-  login,
-  refresh,
-  logout,
-  googleStart,
-  googleCallback,
-};
-
 /**
- * Start Apple Sign-In
+ * Apple OAuth start
  */
 const appleStart = async (req, res) => {
   try {
     const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${process.env.APPLE_CLIENT_ID}&redirect_uri=${process.env.APPLE_REDIRECT_URI}&response_type=code id_token&response_mode=form_post&scope=email name`;
-
     res.json({
       success: true,
       data: { authUrl: appleAuthUrl }
@@ -209,7 +220,7 @@ const appleStart = async (req, res) => {
 };
 
 /**
- * Handle Apple callback
+ * Apple OAuth callback - FIXED: Uses token.service, hashes refresh token
  */
 const appleCallback = async (req, res) => {
   try {
@@ -222,24 +233,13 @@ const appleCallback = async (req, res) => {
     const appleService = require('../../services/auth/apple.auth.service');
     const userRecord = await appleService.handleAppleCallback(id_token, user ? JSON.parse(user) : null);
 
-    // Generate JWT tokens
-    const jwtUtil = require('../../utils/jwt.util');
-    const accessToken = jwtUtil.generateAccessToken({
-      userId: userRecord.id,
-      email: userRecord.email,
-      role: userRecord.role || 'user'
+    // Use unified token service (generates and stores HASHED refresh token)
+    const tokens = await tokenService.generateTokenPair({ 
+      id: userRecord.id, 
+      email: userRecord.email, 
+      role: userRecord.role || 'user' 
     });
-
-    const refreshToken = tokenService.generateRefreshToken({
-      userId: userRecord.id
-    });
-
-    // Store refresh token
-    await query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
-      [userRecord.id, refreshToken]
-    );
+    await tokenService.storeRefreshToken(userRecord.id, tokens.refreshToken, req.ip, req.get('user-agent'));
 
     res.json({
       success: true,
@@ -248,10 +248,7 @@ const appleCallback = async (req, res) => {
           id: userRecord.id,
           email: userRecord.email
         },
-        tokens: {
-          accessToken,
-          refreshToken
-        }
+        tokens
       }
     });
   } catch (error) {
@@ -260,25 +257,10 @@ const appleCallback = async (req, res) => {
   }
 };
 
-module.exports.appleStart = appleStart;
-module.exports.appleCallback = appleCallback;
-
-// Export all methods with both naming conventions
-module.exports.signUp = register;
-module.exports.register = register;
-module.exports.signIn = login;
-module.exports.login = login;
-module.exports.signOut = logout;
-module.exports.logout = logout;
-module.exports.refreshToken = refresh;
-module.exports.refresh = refresh;
-module.exports.resetPassword = async (req, res) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
-};
-module.exports.verifyEmail = async (req, res) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
-};
-module.exports.getMe = async (req, res) => {
+/**
+ * Get current user
+ */
+const getMe = async (req, res) => {
   try {
     const userId = req.userId;
     const result = await query(
@@ -306,8 +288,6 @@ module.exports.getMe = async (req, res) => {
     res.status(500).json({ success: false, error: 'Failed to get user data' });
   }
 };
-module.exports.googleStart = googleStart;
-module.exports.googleCallback = googleCallback;
 
 /**
  * Link Google account to existing user
@@ -324,7 +304,6 @@ const linkGoogle = async (req, res) => {
     const googleService = require('../../services/auth/google.auth.service');
     const googleData = await googleService.verifyGoogleToken(idToken);
 
-    // Check if Google account already linked to another user
     const existing = await query(
       'SELECT id FROM users WHERE external_provider = $1 AND external_provider_id = $2',
       ['google', googleData.sub]
@@ -337,7 +316,6 @@ const linkGoogle = async (req, res) => {
       });
     }
 
-    // Link Google to current user
     await query(
       `UPDATE users 
        SET external_provider = 'google', 
@@ -374,7 +352,6 @@ const linkApple = async (req, res) => {
     const appleService = require('../../services/auth/apple.auth.service');
     const appleData = await appleService.verifyAppleToken(idToken);
 
-    // Check if Apple account already linked to another user
     const existing = await query(
       'SELECT id FROM users WHERE external_provider = $1 AND external_provider_id = $2',
       ['apple', appleData.sub]
@@ -387,7 +364,6 @@ const linkApple = async (req, res) => {
       });
     }
 
-    // Link Apple to current user
     await query(
       `UPDATE users 
        SET external_provider = 'apple', 
@@ -409,11 +385,8 @@ const linkApple = async (req, res) => {
   }
 };
 
-module.exports.linkGoogle = linkGoogle;
-module.exports.linkApple = linkApple;
-
 /**
- * Change password (requires old password)
+ * Change password
  */
 const changePassword = async (req, res) => {
   try {
@@ -427,7 +400,6 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // Get user
     const userResult = await query('SELECT password_hash FROM users WHERE id = $1', [userId]);
     
     if (userResult.rows.length === 0) {
@@ -443,15 +415,12 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // Verify old password
-    const bcrypt = require('bcryptjs');
     const validPassword = await bcrypt.compare(oldPassword, user.password_hash);
 
     if (!validPassword) {
       return res.status(401).json({ success: false, error: 'Incorrect old password' });
     }
 
-    // Validate new password strength
     if (newPassword.length < 8) {
       return res.status(400).json({ 
         success: false, 
@@ -459,13 +428,11 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // Hash new password
     const newHash = await bcrypt.hash(newPassword, 12);
 
-    // Update password
     await query('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, userId]);
 
-    // Revoke all refresh tokens (force re-login on all devices)
+    // Revoke all refresh tokens (force re-login)
     await query('DELETE FROM refresh_tokens WHERE user_id = $1', [userId]);
 
     logger.info('Password changed', { userId });
@@ -480,4 +447,38 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports.changePassword = changePassword;
+/**
+ * Reset password (placeholder)
+ */
+const resetPassword = async (req, res) => {
+  res.status(501).json({ success: false, message: 'Not implemented yet' });
+};
+
+/**
+ * Verify email (placeholder)
+ */
+const verifyEmail = async (req, res) => {
+  res.status(501).json({ success: false, message: 'Not implemented yet' });
+};
+
+// Export all methods
+module.exports = {
+  register,
+  signUp: register,
+  login,
+  signIn: login,
+  refresh,
+  refreshToken: refresh,
+  logout,
+  signOut: logout,
+  googleStart,
+  googleCallback,
+  appleStart,
+  appleCallback,
+  getMe,
+  linkGoogle,
+  linkApple,
+  changePassword,
+  resetPassword,
+  verifyEmail
+};
