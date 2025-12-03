@@ -23,6 +23,25 @@ class TokenService {
     );
   }
 
+  // Generate both access and refresh tokens
+  async generateTokenPair(userId, ipAddress = null, userAgent = null) {
+    try {
+      const accessToken = this.generateAccessToken(userId);
+      const refreshToken = this.generateRefreshToken(userId);
+      
+      // Store refresh token in database
+      await this.storeRefreshToken(userId, refreshToken, ipAddress, userAgent);
+      
+      return {
+        accessToken,
+        refreshToken
+      };
+    } catch (error) {
+      console.error('[token-service] error: Generate token pair failed', { error: error.message });
+      throw new Error('Failed to generate token pair');
+    }
+  }
+
   // Store refresh token in database with token_family
   async storeRefreshToken(userId, token, ipAddress = null, userAgent = null) {
     try {
