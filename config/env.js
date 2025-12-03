@@ -10,12 +10,15 @@ module.exports = cleanEnv(process.env, {
   // Database
   DATABASE_URL: str(),
 
-  // JWT - ACCESS and REFRESH are the primary secrets
-  JWT_SECRET: str({ default: 'fallback-secret' }), // Optional fallback
+  // JWT
+  JWT_SECRET: str({ default: 'fallback-secret' }),
   JWT_ACCESS_SECRET: str(),
   JWT_REFRESH_SECRET: str(),
   JWT_ACCESS_EXPIRY: str({ default: '15m' }),
   JWT_REFRESH_EXPIRY: str({ default: '7d' }),
+
+  // AI
+  OPENAI_API_KEY: str({ default: '' }),
 
   // Security
   INTERNAL_API_KEY: str({ default: 'test-api-key' }),
@@ -34,11 +37,11 @@ module.exports = cleanEnv(process.env, {
   GOOGLE_CLIENT_SECRET: str({ default: '' }),
 
   // File Upload
-  MAX_FILE_SIZE: num({ default: 10485760 }), // 10MB
+  MAX_FILE_SIZE: num({ default: 10485760 }),
   ALLOWED_FILE_TYPES: str({ default: 'pdf,doc,docx,jpg,png,jpeg,gif,txt,csv,xlsx' }),
 
   // Rate Limiting
-  RATE_LIMIT_WINDOW: num({ default: 900000 }), // 15 minutes
+  RATE_LIMIT_WINDOW: num({ default: 900000 }),
   RATE_LIMIT_MAX: num({ default: 100 }),
 
   // Workers
