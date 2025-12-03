@@ -10,10 +10,10 @@ module.exports = cleanEnv(process.env, {
   // Database
   DATABASE_URL: str(),
 
-  // JWT - Use single JWT_SECRET for both access and refresh
-  JWT_SECRET: str({ default: 'test-jwt-secret' }),
-  JWT_ACCESS_SECRET: str({ devDefault: 'test-jwt-secret' }),
-  JWT_REFRESH_SECRET: str({ devDefault: 'test-jwt-secret' }),
+  // JWT - ACCESS and REFRESH are the primary secrets
+  JWT_SECRET: str({ default: 'fallback-secret' }), // Optional fallback
+  JWT_ACCESS_SECRET: str(),
+  JWT_REFRESH_SECRET: str(),
   JWT_ACCESS_EXPIRY: str({ default: '15m' }),
   JWT_REFRESH_EXPIRY: str({ default: '7d' }),
 
