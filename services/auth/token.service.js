@@ -6,8 +6,7 @@ const env = require('../../config/env');
 
 class TokenService {
   // Generate access token (short-lived)
-  generateAccessToken(user) {
-    const userId = typeof user === 'object' ? user.id : user;
+  generateAccessToken(userId) {
     return jwt.sign(
       { userId, type: 'access' },
       env.JWT_ACCESS_SECRET,
@@ -16,8 +15,7 @@ class TokenService {
   }
 
   // Generate refresh token (long-lived)
-  generateRefreshToken(user) {
-    const userId = typeof user === 'object' ? user.id : user;
+  generateRefreshToken(userId) {
     return jwt.sign(
       { userId, type: 'refresh', jti: uuidv4() },
       env.JWT_REFRESH_SECRET,
@@ -26,12 +24,10 @@ class TokenService {
   }
 
   // Generate both access and refresh tokens
-  async generateTokenPair(user, ipAddress = null, userAgent = null) {
+  async generateTokenPair(userId, ipAddress = null, userAgent = null) {
     try {
-      const accessToken = this.generateAccessToken(user);
-      const refreshToken = this.generateRefreshToken(user);
-      
-      const userId = typeof user === 'object' ? user.id : user;
+      const accessToken = this.generateAccessToken(userId);
+      const refreshToken = this.generateRefreshToken(userId);
       
       // Store refresh token in database
       await this.storeRefreshToken(userId, refreshToken, ipAddress, userAgent);

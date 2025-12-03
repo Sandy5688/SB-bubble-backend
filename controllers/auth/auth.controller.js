@@ -35,8 +35,7 @@ const register = async (req, res) => {
     );
 
     // Use unified token service
-    const tokens = await tokenService.generateTokenPair({ id: user.id, email: user.email, role: 'user' });
-    await tokenService.storeRefreshToken(user.id, tokens.refreshToken, req.ip, req.get('user-agent'));
+    const tokens = await tokenService.generateTokenPair(user.id, req.ip, req.get('user-agent'));
 
     logger.info('User registered', { userId: user.id, email });
 
@@ -100,8 +99,7 @@ const login = async (req, res) => {
     );
 
     // Use unified token service
-    const tokens = await tokenService.generateTokenPair({ id: user.id, email: user.email, role: user.role || 'user' });
-    await tokenService.storeRefreshToken(user.id, tokens.refreshToken, req.ip, req.get('user-agent'));
+    const tokens = await tokenService.generateTokenPair(user.id, req.ip, req.get('user-agent'));
 
     logger.info('User logged in', { userId: user.id });
 
@@ -144,8 +142,7 @@ const refresh = async (req, res) => {
     await tokenService.revokeRefreshToken(refreshToken, 'token_refresh');
 
     // Generate new token pair
-    const tokens = await tokenService.generateTokenPair({ id: user.id, email: user.email, role: user.role || 'user' });
-    await tokenService.storeRefreshToken(user.id, tokens.refreshToken, req.ip, req.get('user-agent'));
+    const tokens = await tokenService.generateTokenPair(user.id, req.ip, req.get('user-agent'));
 
     res.json({ success: true, data: { tokens } });
   } catch (error) {
