@@ -1,6 +1,6 @@
 const { OAuth2Client } = require('google-auth-library');
 const { query } = require('../../config/database');
-const { generateTokenPair } = require('../../utils/jwt.util');
+const tokenService = require('./token.service');
 const { createLogger } = require('../../config/monitoring');
 
 const logger = createLogger('google-auth');
@@ -45,8 +45,8 @@ const verifyGoogleToken = async (idToken) => {
 
 const handleGoogleCallback = async (code, metadata = {}) => {
   try {
-    const { tokens } = await client.getToken(code);
-    const googleData = await verifyGoogleToken(tokens.id_token);
+    const { tokens: googleTokens } = await client.getToken(code);
+    const googleData = await verifyGoogleToken(googleTokens.id_token);
 
     let result = await query(
       `SELECT * FROM users WHERE external_provider = 'google' AND external_provider_id = $1`,
@@ -88,7 +88,20 @@ const handleGoogleCallback = async (code, metadata = {}) => {
       [user.id, metadata.ipAddress, metadata.userAgent]
     );
 
-    const authTokens = await generateTokenPair(user, metadata);
+    // Use unified token service
+    const authTokens = tokenService.generateTokenPair({ 
+      id: user.id, 
+      email: user.email, 
+      role: user.role || 'user' 
+    });
+    
+    // Store hashed refresh token
+    await tokenService.storeRefreshToken(
+      user.id, 
+      authTokens.refreshToken, 
+      metadata.ipAddress, 
+      metadata.userAgent
+    );
 
     logger.info('Google authentication successful', { userId: user.id, isNewUser });
 
