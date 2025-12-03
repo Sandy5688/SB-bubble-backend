@@ -1,3 +1,5 @@
+// DEPRECATED: Use services/storage/virus-scanner.service.js instead
+
 const { query } = require('../config/database');
 const { createLogger } = require('../config/monitoring');
 

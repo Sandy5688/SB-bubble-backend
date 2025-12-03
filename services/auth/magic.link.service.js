@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { query } = require('../../config/database');
+const emailService = require('../email.service');
 const { createLogger } = require('../../config/monitoring');
 const env = require('../../config/env');
 const logger = createLogger('magic-link');
@@ -30,7 +31,7 @@ const generateMagicLink = async (email, ipAddress, userAgent) => {
     // Create magic link URL (send via email, never return in API)
     const magicUrl = `${env.FRONTEND_URL}/auth/magic?token=${token}`;
 
-    // TODO: Send email with magicUrl using SendGrid/etc
+    await emailService.sendMagicLink(email, magicUrl);
     logger.info('Magic link generated', { userId, email });
 
     return { magicUrl }; // Only used internally for email sending
