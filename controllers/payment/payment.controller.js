@@ -195,7 +195,13 @@ module.exports.stripeWebhook = async (req, res) => {
       console.warn("Webhook event too old", { eventId: event.id, ageSeconds: Math.floor(eventAge / 1000) });
       return res.status(400).json({ error: "Event too old" });
     }
-  res.status(501).json({ success: false, message: 'Webhook not implemented yet' });
+    
+    // TODO: Implement webhook handling
+    res.status(501).json({ success: false, message: 'Webhook not implemented yet' });
+  } catch (error) {
+    console.error("Webhook error:", error);
+    res.status(500).json({ error: "Internal error" });
+  }
 };
 
 module.exports.paypalWebhook = async (req, res) => {
