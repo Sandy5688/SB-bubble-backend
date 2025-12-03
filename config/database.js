@@ -20,7 +20,9 @@ pool.on('error', (err) => {
   logger.error('Database error', { error: err.message });
 });
 
-// Query function with error handling
+/**
+ * Standard query function (uses pool directly)
+ */
 const query = async (text, params) => {
   try {
     const result = await pool.query(text, params);
@@ -31,7 +33,72 @@ const query = async (text, params) => {
   }
 };
 
-// Health check function
+/**
+ * Get a dedicated client for session-scoped operations
+ * Use this when you need RLS context throughout a transaction
+ */
+const getClient = async () => {
+  const client = await pool.connect();
+  return client;
+};
+
+/**
+ * Execute queries with user context (RLS enforcement)
+ * Uses a single connection to maintain session state
+ */
+const withUserContext = async (userId, role, callback) => {
+  const client = await pool.connect();
+  try {
+    // Set user context for RLS policies
+    await client.query('SELECT set_config($1, $2, true)', ['app.current_user_id', userId.toString()]);
+    await client.query('SELECT set_config($1, $2, true)', ['app.current_user_role', role || 'user']);
+    
+    // Execute the callback with the context-aware client
+    const result = await callback({
+      query: (text, params) => client.query(text, params)
+    });
+    
+    return result;
+  } catch (error) {
+    logger.error('Query with context failed', { error: error.message, userId });
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Execute a transaction with user context
+ */
+const withTransaction = async (userId, role, callback) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    
+    // Set user context for RLS
+    if (userId) {
+      await client.query('SELECT set_config($1, $2, true)', ['app.current_user_id', userId.toString()]);
+      await client.query('SELECT set_config($1, $2, true)', ['app.current_user_role', role || 'user']);
+    }
+    
+    const result = await callback({
+      query: (text, params) => client.query(text, params)
+    });
+    
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    logger.error('Transaction failed', { error: error.message, userId });
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * Health check function
+ */
 const healthCheck = async () => {
   try {
     await pool.query('SELECT 1');
@@ -45,5 +112,8 @@ const healthCheck = async () => {
 module.exports = {
   pool,
   query,
+  getClient,
+  withUserContext,
+  withTransaction,
   healthCheck
 };
