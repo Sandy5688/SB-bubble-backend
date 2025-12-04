@@ -1,5 +1,5 @@
 // workers/queue/queueManager.js - Bull Queue Manager
-const Bull = require('bull');
+const { Queue } = require('bullmq');
 const { createLogger } = require('../../config/monitoring');
 const logger = createLogger('queue-manager');
 
