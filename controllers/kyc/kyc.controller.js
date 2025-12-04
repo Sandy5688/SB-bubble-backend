@@ -1,3 +1,4 @@
+const { encryptPIIFields, decryptPIIFields, KYC_PII_FIELDS } = require('../../utils/pii-encryption');
 const kycService = require('../../services/kyc/kyc.service');
 const { createLogger } = require('../../config/monitoring');
 const { validateUpload, generateSecureKey } = require('../../services/storage/upload-validator');
