@@ -1,3 +1,4 @@
+const { pool } = require('../../config/database');
 const { getClientWithContext } = require('../../utils/rls-helper');
 const bcrypt = require('bcryptjs');
 const { query } = require('../../config/database');
