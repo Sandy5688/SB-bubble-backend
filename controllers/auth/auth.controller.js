@@ -1,3 +1,4 @@
+const { getClientWithContext } = require('../../utils/rls-helper');
 const bcrypt = require('bcryptjs');
 const { query } = require('../../config/database');
 const tokenService = require('../../services/auth/token.service');

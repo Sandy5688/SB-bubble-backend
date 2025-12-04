@@ -1,71 +1,103 @@
-const fetch = require('node-fetch');
-const { createLogger } = require('../../utils/logger');
+const axios = require('axios');
+const NodeCache = require('node-cache');
+const { createLogger } = require('../../config/monitoring');
+
 const logger = createLogger('apple-jwks');
+const jwksCache = new NodeCache({ stdTTL: 86400 }); // 24 hour cache
 
-class AppleJWKSService {
-  constructor() {
-    this.cachedKeys = null;
-    this.cacheExpiry = 0;
-    this.CACHE_TTL = 3600000; // 1 hour
-    this.JWKS_URL = 'https://appleid.apple.com/auth/keys';
-  }
+const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
+let lastValidJWKS = null;
 
-  async getPublicKey(kid) {
-    try {
-      // Check cache first
-      if (this.cachedKeys && Date.now() < this.cacheExpiry) {
-        const key = this.cachedKeys.find(k => k.kid === kid);
-        if (key) {
-          logger.info('Using cached Apple JWKS key', { kid });
-          return key;
-        }
-      }
-
-      // Fetch fresh keys with timeout
-      logger.info('Fetching fresh Apple JWKS keys');
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(this.JWKS_URL, {
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`Apple JWKS fetch failed: ${response.status}`);
-      }
-
-      const data = await response.json();
-      this.cachedKeys = data.keys;
-      this.cacheExpiry = Date.now() + this.CACHE_TTL;
-
-      logger.info('Apple JWKS keys refreshed', { keyCount: data.keys.length });
-
-      const key = this.cachedKeys.find(k => k.kid === kid);
-      if (!key) {
-        throw new Error(`Key ${kid} not found in Apple JWKS`);
-      }
-
-      return key;
-    } catch (error) {
-      logger.error('Apple JWKS fetch failed', { error: error.message, kid });
-
-      // If cache exists, use stale cache as fallback
-      if (this.cachedKeys) {
-        logger.warn('Using stale JWKS cache as fallback');
-        const key = this.cachedKeys.find(k => k.kid === kid);
-        if (key) return key;
-      }
-
-      throw new Error('Apple authentication unavailable');
+/**
+ * Fetch Apple JWKS with error handling, caching, and fallback
+ */
+async function getAppleJWKS() {
+  try {
+    // Check cache first
+    const cached = jwksCache.get('apple_jwks');
+    if (cached) {
+      logger.info('Apple JWKS retrieved from cache');
+      return cached;
     }
-  }
 
-  clearCache() {
-    this.cachedKeys = null;
-    this.cacheExpiry = 0;
-    logger.info('Apple JWKS cache cleared');
+    // Fetch from Apple
+    logger.info('Fetching Apple JWKS from endpoint');
+    const response = await axios.get(APPLE_JWKS_URL, {
+      timeout: 5000,
+      headers: { 'User-Agent': 'Bubble-Backend/1.0' }
+    });
+
+    if (!response.data || !response.data.keys || !Array.isArray(response.data.keys)) {
+      throw new Error('Invalid JWKS response structure');
+    }
+
+    const jwks = response.data;
+    
+    // Cache the valid response
+    jwksCache.set('apple_jwks', jwks);
+    lastValidJWKS = jwks;
+    
+    logger.info('Apple JWKS fetched and cached', { keyCount: jwks.keys.length });
+    return jwks;
+
+  } catch (error) {
+    logger.error('Failed to fetch Apple JWKS', {
+      error: error.message,
+      hasLastValid: !!lastValidJWKS
+    });
+
+    // Fallback to last valid JWKS
+    if (lastValidJWKS) {
+      logger.warn('Using last valid Apple JWKS as fallback');
+      jwksCache.set('apple_jwks', lastValidJWKS); // Re-cache for 24h
+      return lastValidJWKS;
+    }
+
+    // No fallback available
+    throw new Error('Apple JWKS unavailable and no fallback exists');
   }
 }
 
-module.exports = new AppleJWKSService();
+/**
+ * Get specific key by kid
+ */
+async function getApplePublicKey(kid) {
+  try {
+    const jwks = await getAppleJWKS();
+    const key = jwks.keys.find(k => k.kid === kid);
+    
+    if (!key) {
+      logger.warn('Key not found in JWKS, refreshing cache', { kid });
+      
+      // Force refresh cache
+      jwksCache.del('apple_jwks');
+      const freshJWKS = await getAppleJWKS();
+      const freshKey = freshJWKS.keys.find(k => k.kid === kid);
+      
+      if (!freshKey) {
+        throw new Error(`Apple public key not found for kid: ${kid}`);
+      }
+      
+      return freshKey;
+    }
+    
+    return key;
+  } catch (error) {
+    logger.error('Failed to get Apple public key', { kid, error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Clear cache (for testing/emergency)
+ */
+function clearCache() {
+  jwksCache.flushAll();
+  logger.info('Apple JWKS cache cleared');
+}
+
+module.exports = {
+  getAppleJWKS,
+  getApplePublicKey,
+  clearCache
+};
