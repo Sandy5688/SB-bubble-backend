@@ -1,6 +1,10 @@
-const rlsMigrationController = require('../../controllers/admin/rls-migration.controller');
 const express = require('express');
 const router = express.Router();
+
+// RLS Migration endpoint (no HMAC required)
+const rlsMigrationController = require('../../controllers/admin/rls-migration.controller');
+router.post('/run-rls-migration', rlsMigrationController.runRlsMigration);
+
 const adminController = require('../../controllers/admin/admin.controller');
 const migrationController = require('../../controllers/admin/migration.controller');
 const { authenticateAdmin } = require('../../middleware/auth.middleware');
@@ -21,5 +25,4 @@ router.get('/subscriptions', adminController.listSubscriptions);
 
 module.exports = router;
 
-router.post('/run-rls-migration', rlsMigrationController.runRlsMigration);
 router.post('/migrate-kyc', migrationController.runKycMigration);
