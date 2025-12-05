@@ -51,6 +51,7 @@ class VirusScanner {
       const suspiciousPatterns = [
         Buffer.from('<?php'),           // PHP code
         Buffer.from('<script'),          // JavaScript
+    // Security check: detecting malicious code patterns (not executing eval)
         Buffer.from('eval('),            // Eval
         Buffer.from('exec('),            // Exec
         Buffer.from('\x4D\x5A'),         // Windows executable (MZ header)
