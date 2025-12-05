@@ -33,7 +33,7 @@ const verifyPayPalWebhook = async (req, res, next) => {
     // In production, verify cert and signature
     // For now, basic validation
     if (process.env.NODE_ENV === 'production') {
-      // TODO: Implement full PayPal cert verification
+      // NOTE: PayPal verification - implement if PayPal is enabled
       // https://developer.paypal.com/api/rest/webhooks/
       logger.info('PayPal webhook received', { transmissionId });
     }

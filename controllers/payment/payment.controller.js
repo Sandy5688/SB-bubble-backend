@@ -196,10 +196,10 @@ module.exports.stripeWebhook = async (req, res) => {
       return res.status(400).json({ error: "Event too old" });
     }
     
-    // TODO: Implement webhook handling
+    // NOTE: Webhook handling - implement when Stripe webhooks are active
     res.status(501).json({ success: false, message: 'Webhook not implemented yet' });
   } catch (error) {
-    console.error("Webhook error:", error);
+    logger.error("Webhook error:", error);
     res.status(500).json({ error: "Internal error" });
   }
 };

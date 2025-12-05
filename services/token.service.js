@@ -50,7 +50,7 @@ class TokenService {
 
       return result.rows[0];
     } catch (error) {
-      console.error('[token-service] error: Store refresh token failed', { error: error.message });
+      logger.error('[token-service] error: Store refresh token failed', { error: error.message });
       throw new Error('Failed to store refresh token');
     }
   }
@@ -95,7 +95,7 @@ class TokenService {
         user: result.rows[0]
       };
     } catch (error) {
-      console.error('[token-service] error: Validate refresh token failed', { error: error.message });
+      logger.error('[token-service] error: Validate refresh token failed', { error: error.message });
       throw error;
     }
   }
@@ -115,7 +115,7 @@ class TokenService {
       const result = await db.query(query, [tokenHash]);
       return result.rows.length > 0;
     } catch (error) {
-      console.error('[token-service] error: Revoke refresh token failed', { error: error.message });
+      logger.error('[token-service] error: Revoke refresh token failed', { error: error.message });
       throw new Error('Failed to revoke refresh token');
     }
   }
@@ -133,7 +133,7 @@ class TokenService {
       const result = await db.query(query, [userId]);
       return result.rows.length;
     } catch (error) {
-      console.error('[token-service] error: Revoke all user tokens failed', { error: error.message });
+      logger.error('[token-service] error: Revoke all user tokens failed', { error: error.message });
       throw new Error('Failed to revoke user tokens');
     }
   }
@@ -149,7 +149,7 @@ class TokenService {
       const result = await db.query(query);
       return result.rowCount;
     } catch (error) {
-      console.error('[token-service] error: Cleanup expired tokens failed', { error: error.message });
+      logger.error('[token-service] error: Cleanup expired tokens failed', { error: error.message });
       throw new Error('Failed to cleanup expired tokens');
     }
   }
