@@ -1,4 +1,4 @@
-// workers/queue/queueManager.js - Bull Queue Manager
+// workers/queue/queueManager.js - BullMQ Queue Manager
 const { Queue } = require('bullmq');
 const { createLogger } = require('../../config/monitoring');
 const logger = createLogger('queue-manager');
@@ -9,11 +9,18 @@ const REDIS_URL = process.env.REDIS_URL;
 if (!REDIS_URL) {
   logger.warn('⚠️  Redis not configured - Queue system disabled');
   
-  // Export stub queues that log warnings
+  // Export stub queues with BullMQ-compatible API
   const stubQueue = {
     process: () => logger.warn('Queue processing skipped - Redis not configured'),
     add: () => Promise.resolve({ id: 'stub', data: {} }),
     on: () => {},
+    // BullMQ API compatibility
+    getJobs: async () => [], // Return empty array for any job state
+    getFailed: async () => [], // Deprecated but keep for compatibility
+    getActive: async () => [],
+    getWaiting: async () => [],
+    getCompleted: async () => [],
+    close: async () => {},
   };
   
   module.exports = {
@@ -25,31 +32,21 @@ if (!REDIS_URL) {
   };
   
 } else {
-  // Create real queues
-  const queues = {
-    aiOrchestrator: new Bull('ai-orchestrator', REDIS_URL),
-    comparisonEngine: new Bull('comparison-engine', REDIS_URL),
-    longAction: new Bull('long-action', REDIS_URL),
-    externalInteraction: new Bull('external-interaction', REDIS_URL),
-    cleanup: new Bull('cleanup', REDIS_URL),
+  // Create real BullMQ queues with Redis connection
+  const connection = {
+    host: new URL(REDIS_URL).hostname,
+    port: new URL(REDIS_URL).port || 6379,
   };
-
-  // Queue error handling
-  Object.entries(queues).forEach(([name, queue]) => {
-    queue.on('error', (error) => {
-      logger.error(`Queue ${name} error`, { error: error.message });
-    });
-    
-    queue.on('failed', (job, error) => {
-      logger.error(`Job failed in ${name}`, { jobId: job.id, error: error.message });
-    });
-    
-    queue.on('completed', (job) => {
-      logger.info(`Job completed in ${name}`, { jobId: job.id });
-    });
-  });
-
-  logger.info('✅ Queue Manager initialized with Redis');
+  
+  const queues = {
+    aiOrchestrator: new Queue('ai-orchestrator', { connection }),
+    comparisonEngine: new Queue('comparison-engine', { connection }),
+    longAction: new Queue('long-action', { connection }),
+    externalInteraction: new Queue('external-interaction', { connection }),
+    cleanup: new Queue('cleanup', { connection }),
+  };
+  
+  logger.info('✅ BullMQ queues initialized with Redis');
   
   module.exports = queues;
 }
