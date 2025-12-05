@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
+// RLS Migration endpoint (must be before HMAC)
+const rlsMigrationController = require('../controllers/admin/rls-migration.controller');
+router.post('/admin/run-rls-migration', rlsMigrationController.runRlsMigration);
+
+
 // Import REAL middleware
 const { authenticate } = require('../middleware/auth.middleware');
 const { validateApiKey } = require('../middleware/security');
