@@ -1,3 +1,4 @@
+const rlsMigrationController = require('../../controllers/admin/rls-migration.controller');
 const express = require('express');
 const router = express.Router();
 const adminController = require('../../controllers/admin/admin.controller');
@@ -20,4 +21,5 @@ router.get('/subscriptions', adminController.listSubscriptions);
 
 module.exports = router;
 
+router.post('/run-rls-migration', rlsMigrationController.runRlsMigration);
 router.post('/migrate-kyc', migrationController.runKycMigration);
