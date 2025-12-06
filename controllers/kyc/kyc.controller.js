@@ -1,13 +1,17 @@
 const { encryptPIIFields, decryptPIIFields, KYC_PII_FIELDS } = require('../../utils/pii-encryption');
 const kycService = require('../../services/kyc/kyc.service');
+const ocrService = require('../../services/ocr.service');
 const { createLogger } = require('../../config/monitoring');
-const { validateUpload, generateSecureKey } = require('../../services/storage/upload-validator');
+const { validateUpload, generateSecureKey } = require('../../utils/upload-validator');
 const logger = createLogger('kyc-controller');
 const { encrypt, decrypt } = require('../../utils/encryption');
 const fraudDetection = require('../../services/kyc/fraud-detection.service');
+const ocrService = require('../../services/ocr.service');
 const { query } = require('../../config/database');
 const otpService = require('../../services/otp.service');
+const ocrService = require('../../services/ocr.service');
 const s3Service = require('../../services/storage/s3.service');
+const ocrService = require('../../services/ocr.service');
 
 const startKYC = async (req, res) => {
   try {

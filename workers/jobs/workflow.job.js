@@ -1,5 +1,5 @@
-const { supabase } = require('../../config/supabase');
-const { createLogger } = require('../config/monitoring');
+const { supabase } = require('../../config/database');
+const { createLogger } = require('../../config/monitoring');
 const logger = createLogger('workflow.job');
 
 /**
