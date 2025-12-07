@@ -3,7 +3,7 @@ const router = express.Router();
 
 // RLS Migration endpoint (no HMAC required)
 const rlsMigrationController = require('../../controllers/admin/rls-migration.controller');
-router.post('/run-rls-migration', rlsMigrationController.runRlsMigration);
+router.post('/run-rls-migration', rlsMigrationController.runRLSMigration);
 
 const adminController = require('../../controllers/admin/admin.controller');
 const migrationController = require('../../controllers/admin/migration.controller');
