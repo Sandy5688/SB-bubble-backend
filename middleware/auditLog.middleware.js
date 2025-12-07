@@ -93,7 +93,7 @@ const auditLog = (action, resource) => {
           ipAddress,
           userAgent,
           status: 'success'
-        }).catch(err => // console.error('Audit log failed:', err));
+        }).catch(err => { /* console.error('Audit log failed:', err) */ });
       }
 
       // Send original response
