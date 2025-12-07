@@ -50,3 +50,4 @@ exports.runRlsMigration = async (req, res) => {
   }
 };
 
+module.exports = { runRLSMigration };
