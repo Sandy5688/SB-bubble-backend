@@ -447,20 +447,6 @@ const changePassword = async (req, res) => {
   }
 };
 
-/**
- * Reset password (placeholder)
- */
-const resetPassword = async (req, res) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
-};
-
-/**
- * Verify email (placeholder)
- */
-const verifyEmail = async (req, res) => {
-  res.status(501).json({ success: false, message: 'Not implemented yet' });
-};
-
 // Export all methods
 module.exports = {
   register,
