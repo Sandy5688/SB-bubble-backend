@@ -35,7 +35,7 @@ const secureRequestLogger = (req, res, next) => {
   
   res.on('finish', () => {
     const duration = Date.now() - start;
-    // console.log(JSON.stringify({
+    logger.info('HTTP Request', {
       timestamp: new Date().toISOString(),
       method: req.method,
       path: req.path,
@@ -44,7 +44,7 @@ const secureRequestLogger = (req, res, next) => {
       ip: req.ip,
       headers: safeHeaders,
       body: safeBody
-    }));
+    });
   });
   
   next();
