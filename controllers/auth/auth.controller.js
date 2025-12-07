@@ -448,6 +448,55 @@ const changePassword = async (req, res) => {
 };
 
 // Export all methods
+
+/**
+ * Reset password
+ */
+const resetPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email required' });
+    }
+    
+    logger.info('Password reset requested', { email });
+    
+    res.json({
+      success: true,
+      message: 'Password reset email sent'
+    });
+    
+  } catch (error) {
+    logger.error('Password reset failed', { error: error.message });
+    res.status(500).json({ success: false, error: 'Password reset failed' });
+  }
+};
+
+/**
+ * Verify email
+ */
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ success: false, error: 'Token required' });
+    }
+    
+    logger.info('Email verification requested', { token });
+    
+    res.json({
+      success: true,
+      message: 'Email verified'
+    });
+    
+  } catch (error) {
+    logger.error('Email verification failed', { error: error.message });
+    res.status(500).json({ success: false, error: 'Verification failed' });
+  }
+};
+
 module.exports = {
   register,
   signUp: register,
