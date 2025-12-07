@@ -1,3 +1,6 @@
+const { createLogger } = require('../config/monitoring');
+const logger = createLogger('secure-logger');
+
 const SENSITIVE_FIELDS = [
   'password', 'authorization', 'x-api-key', 'token', 'secret', 'jwt'
 ];
