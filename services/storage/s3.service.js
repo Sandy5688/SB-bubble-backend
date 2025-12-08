@@ -29,6 +29,7 @@ async function uploadFile(key, buffer, contentType) {
     return result.Location;
   } catch (error) {
     logger.error('S3 upload failed', { key, error: error.message });
+    logger.error('S3 operation failed', { error: error.message });
     throw error;
   }
 }
@@ -49,6 +50,7 @@ async function getPresignedUrl(key, expiresIn = 3600) {
     return url;
   } catch (error) {
     logger.error('Presigned URL generation failed', { key, error: error.message });
+    logger.error('S3 operation failed', { error: error.message });
     throw error;
   }
 }
@@ -67,6 +69,7 @@ async function deleteFile(key) {
     return true;
   } catch (error) {
     logger.error('S3 delete failed', { key, error: error.message });
+    logger.error('S3 operation failed', { error: error.message });
     throw error;
   }
 }
@@ -85,6 +88,7 @@ async function fileExists(key) {
     if (error.code === 'NotFound') {
       return false;
     }
+    logger.error('S3 operation failed', { error: error.message });
     throw error;
   }
 }

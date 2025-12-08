@@ -1,3 +1,6 @@
+const { createLogger } = require('../config/monitoring');
+const logger = createLogger('ai-controller');
+
 const aiService = require('../services/ai.service');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -18,6 +21,7 @@ class AIController {
         data: result
       });
     } catch (error) {
+    logger.error('AI operation failed', { error: error.message });
       next(error);
     }
   }
@@ -38,6 +42,7 @@ class AIController {
         data: result
       });
     } catch (error) {
+    logger.error('AI operation failed', { error: error.message });
       next(error);
     }
   }
@@ -58,6 +63,7 @@ class AIController {
         data: result
       });
     } catch (error) {
+    logger.error('AI operation failed', { error: error.message });
       next(error);
     }
   }
@@ -78,6 +84,7 @@ class AIController {
         data: result
       });
     } catch (error) {
+    logger.error('AI operation failed', { error: error.message });
       next(error);
     }
   }

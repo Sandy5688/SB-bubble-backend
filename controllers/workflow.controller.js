@@ -1,3 +1,6 @@
+const { createLogger } = require('../config/monitoring');
+const logger = createLogger('workflow-controller');
+
 const workflowService = require('../services/workflow.service');
 const { AppError } = require('../middleware/errorHandler');
 
@@ -18,6 +21,7 @@ class WorkflowController {
         data: { workflow }
       });
     } catch (error) {
+    logger.error('Workflow operation failed', { error: error.message });
       next(error);
     }
   }
@@ -34,6 +38,7 @@ class WorkflowController {
         data: { workflow }
       });
     } catch (error) {
+    logger.error('Workflow operation failed', { error: error.message });
       next(error);
     }
   }
@@ -55,6 +60,7 @@ class WorkflowController {
         data: result
       });
     } catch (error) {
+    logger.error('Workflow operation failed', { error: error.message });
       next(error);
     }
   }
@@ -71,6 +77,7 @@ class WorkflowController {
         message: 'Workflow cancelled successfully'
       });
     } catch (error) {
+    logger.error('Workflow operation failed', { error: error.message });
       next(error);
     }
   }
@@ -87,6 +94,7 @@ class WorkflowController {
         data: { workflow }
       });
     } catch (error) {
+    logger.error('Workflow operation failed', { error: error.message });
       next(error);
     }
   }

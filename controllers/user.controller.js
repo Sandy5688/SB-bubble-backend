@@ -1,3 +1,6 @@
+const { createLogger } = require('../config/monitoring');
+const logger = createLogger('user-controller');
+
 const userService = require('../services/user.service');
 const fileService = require('../services/file.service');
 const { pool } = require('../config/database');
@@ -13,6 +16,7 @@ class UserController {
         data: { profile }
       });
     } catch (error) {
+    logger.error('User operation failed', { error: error.message });
       next(error);
     }
   }
@@ -27,6 +31,7 @@ class UserController {
         data: { profile }
       });
     } catch (error) {
+    logger.error('User operation failed', { error: error.message });
       next(error);
     }
   }
@@ -40,6 +45,7 @@ class UserController {
         data: { stats }
       });
     } catch (error) {
+    logger.error('User operation failed', { error: error.message });
       next(error);
     }
   }
@@ -53,6 +59,7 @@ class UserController {
         message: 'Account deactivated successfully'
       });
     } catch (error) {
+    logger.error('User operation failed', { error: error.message });
       next(error);
     }
   }
@@ -76,6 +83,7 @@ class UserController {
         data: result
       });
     } catch (error) {
+    logger.error('User operation failed', { error: error.message });
       next(error);
     }
   }
@@ -125,6 +133,7 @@ class UserController {
         message: 'Account deleted successfully'
       });
     } catch (error) {
+    logger.error('User operation failed', { error: error.message });
       next(error);
     }
   }
