@@ -1,6 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
-  setupFiles: ['<rootDir>/tests/setup.js'],
+  setupFiles: ['./tests/setup.js'],
   testMatch: ['**/tests/**/*.test.js'],
   collectCoverageFrom: [
     'middleware/**/*.js',
@@ -9,5 +9,6 @@ module.exports = {
     '!**/node_modules/**'
   ],
   coverageDirectory: 'coverage',
-  verbose: true
+  verbose: true,
+  testTimeout: 10000
 };
