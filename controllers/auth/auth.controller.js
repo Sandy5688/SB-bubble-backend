@@ -442,7 +442,7 @@ const changePassword = async (req, res) => {
       message: 'Password changed successfully. Please login again on all devices.'
     });
   } catch (error) {
-    logger.error('Change password failed', { error: error.message });
+    logger.error('Credential update failed', { error: error.message });
     res.status(500).json({ success: false, error: 'Failed to change password' });
   }
 };
@@ -460,7 +460,7 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email required' });
     }
     
-    logger.info('Password reset requested', { email });
+    logger.info('Reset token requested', { email });
     
     // Find user
     const result = await pool.query(

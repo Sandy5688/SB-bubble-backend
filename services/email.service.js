@@ -102,10 +102,10 @@ class EmailService {
       }
 
       await this.transporter.sendMail(mailOptions);
-      logger.info('Password reset email sent', { email });
+      logger.info('Reset token email sent', { email });
       return true;
     } catch (error) {
-      logger.error('Failed to send password reset email', { error: error.message });
+      logger.error('Failed to send reset token email', { error: error.message });
       throw new Error('Failed to send email');
     }
   }
