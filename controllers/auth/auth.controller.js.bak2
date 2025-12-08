@@ -462,56 +462,9 @@ const resetPassword = async (req, res) => {
     
     logger.info('Password reset requested', { email });
     
-    // Find user
-    const result = await pool.query(
-      'SELECT id, email FROM users WHERE email = $1',
-      [email]
-    );
-    
-    if (result.rows.length === 0) {
-      // Still return success to prevent email enumeration
-      return res.json({
-        success: true,
-        message: 'If an account exists with that email, a password reset link has been sent'
-      });
-    }
-    
-    const user = result.rows[0];
-    
-    // Generate reset token
-    const crypto = require('crypto');
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    
-    // Store reset token
-    await pool.query(
-      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id) 
-       DO UPDATE SET token_hash = $2, expires_at = $3, created_at = NOW()`,
-      [user.id, hashedToken, expiresAt]
-    );
-    
-    // Send email
-    const emailService = require('../../services/email.service');
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-    
-    try {
-      await emailService.sendPasswordResetEmail(user.email, {
-        resetUrl,
-        expiresIn: '1 hour',
-        userName: user.email.split('@')[0]
-      });
-      logger.info('Password reset email sent', { userId: user.id });
-    } catch (emailError) {
-      logger.error('Failed to send reset email', { error: emailError.message });
-      // Don't fail the request, just log
-    }
-    
     res.json({
       success: true,
-      message: 'If an account exists with that email, a password reset link has been sent'
+      message: 'Password reset email sent'
     });
     
   } catch (error) {
@@ -520,6 +473,9 @@ const resetPassword = async (req, res) => {
   }
 };
 
+/**
+ * Verify email
+ */
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
