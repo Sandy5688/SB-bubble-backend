@@ -105,7 +105,7 @@ class EmailService {
       logger.info('Password reset email sent', { email });
       return true;
     } catch (error) {
-      logger.error('Failed to send password reset email', { error: error.message, email });
+      logger.error('Failed to send password reset email', { error: error.message });
       throw new Error('Failed to send email');
     }
   }

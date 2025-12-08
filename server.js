@@ -57,3 +57,8 @@ module.exports = server;
 
 // Force deploy - 1764760144
 // Auto-deploy enabled - 1764760261
+
+// Request timeout (30 seconds)
+server.timeout = 30000;
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
