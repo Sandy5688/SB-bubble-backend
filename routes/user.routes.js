@@ -4,6 +4,7 @@ const userController = require('../controllers/user.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { validateApiKey } = require('../middleware/security');
 const { validateHmacSignature } = require('../middleware/hmac.middleware');
+const { requireOwnership } = require('../middleware/rbac.middleware');
 const uploadValidator = require('../middleware/upload-validator');
 
 // Apply security layers: HMAC -> API Key -> JWT Auth

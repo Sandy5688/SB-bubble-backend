@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const kycController = require('../../controllers/kyc/kyc.controller');
-const { authenticate, authenticateAdmin } = require('../../middleware/auth.middleware');
+const { authenticate, requireRole('admin') } = require('../../middleware/auth.middleware');
 const { validateApiKey } = require('../../middleware/security');
 const { validateHmacSignature } = require('../../middleware/hmac.middleware');
 
@@ -16,8 +16,8 @@ router.post('/:sessionId/upload', kycController.uploadDocument);
 router.get('/:sessionId/status', kycController.getStatus);
 
 // Admin-only routes
-router.post('/:sessionId/approve', authenticateAdmin, kycController.approveKYC);
-router.post('/:sessionId/reject', authenticateAdmin, kycController.rejectKYC);
-router.get('/admin/pending', authenticateAdmin, kycController.getPendingSessions);
+router.post('/:sessionId/approve', requireRole('admin'), kycController.approveKYC);
+router.post('/:sessionId/reject', requireRole('admin'), kycController.rejectKYC);
+router.get('/admin/pending', requireRole('admin'), kycController.getPendingSessions);
 
 module.exports = router;

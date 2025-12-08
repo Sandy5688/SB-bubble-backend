@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { requireRole } = require('../../middleware/rbac.middleware');
 
 // RLS Migration endpoint (no HMAC required)
 const rlsMigrationController = require('../../controllers/admin/rls-migration.controller');
@@ -7,10 +8,10 @@ router.post('/run-rls-migration', rlsMigrationController.runRLSMigration);
 
 const adminController = require('../../controllers/admin/admin.controller');
 const migrationController = require('../../controllers/admin/migration.controller');
-const { authenticateAdmin } = require('../../middleware/auth.middleware');
+const { requireRole('admin') } = require('../../middleware/auth.middleware');
 
 // All admin routes require admin authentication
-router.use(authenticateAdmin);
+router.use(requireRole('admin'));
 
 // Users
 router.get('/users', adminController.listUsers);
