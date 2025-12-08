@@ -319,3 +319,117 @@ Proprietary - All rights reserved
 **Version:** 1.0.0  
 **Last Updated:** December 2024  
 **Status:** Production Ready ✅
+
+## HMAC Request Signing
+
+All protected API endpoints require HMAC-SHA256 request signing for security.
+
+### Required Headers
+```
+x-api-key: your_api_key_id
+x-signature: computed_hmac_signature_hex
+x-timestamp: 2025-12-08T10:30:00Z
+x-nonce: random_16_byte_hex_string
+content-type: application/json
+```
+
+### Client Signing Example (JavaScript)
+```javascript
+const crypto = require('crypto');
+
+// Helper functions
+function sha256Hex(input) {
+  return crypto.createHash('sha256').update(input).digest('hex');
+}
+
+function hmacSha256Hex(secret, input) {
+  return crypto.createHmac('sha256', secret).update(input).digest('hex');
+}
+
+function sortedStringify(obj) {
+  if (!obj) return '';
+  const ordered = (o) => {
+    if (Array.isArray(o)) return o.map(ordered);
+    if (o && typeof o === 'object') {
+      return Object.keys(o).sort().reduce((result, key) => {
+        result[key] = ordered(o[key]);
+        return result;
+      }, {});
+    }
+    return o;
+  };
+  return JSON.stringify(ordered(obj));
+}
+
+// Sign request
+const API_KEY = 'bubble_admin_key_001';
+const API_SECRET = 'your_secret_here';
+
+const method = 'POST';
+const path = '/api/v1/kyc/start';
+const timestamp = new Date().toISOString();
+const nonce = crypto.randomBytes(16).toString('hex');
+const body = { consent: true };
+
+// 1. Hash body (sorted JSON)
+const bodyHash = sha256Hex(sortedStringify(body));
+
+// 2. Build canonical string
+const canonical = `${method}\n${path}\n${API_KEY}\n${timestamp}\n${nonce}\n${bodyHash}`;
+
+// 3. Compute HMAC signature
+const signature = hmacSha256Hex(API_SECRET, canonical);
+
+// 4. Make request
+const response = await fetch(`https://api.example.com${path}`, {
+  method,
+  headers: {
+    'x-api-key': API_KEY,
+    'x-signature': signature,
+    'x-timestamp': timestamp,
+    'x-nonce': nonce,
+    'content-type': 'application/json'
+  },
+  body: JSON.stringify(body)
+});
+```
+
+### Public Routes (No HMAC Required)
+
+- `GET /api/v1/health`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/magic-link`
+- OAuth callback endpoints
+
+### Security Features
+
+- **Replay Protection**: Nonces are deduplicated for 5 minutes
+- **Timestamp Validation**: Requests must be within ±5 minutes of server time
+- **Constant-Time Comparison**: Prevents timing attacks
+- **Audit Logging**: All HMAC events logged to `hmac_events` table
+
+### Error Codes
+
+| Code | Status | Meaning |
+|------|--------|---------|
+| `HMAC_MISSING` | 401 | Missing required HMAC header |
+| `HMAC_TIMESTAMP` | 401 | Timestamp outside allowed window |
+| `HMAC_REPLAY` | 401 | Nonce reused (replay attack) |
+| `HMAC_APIKEY_INVALID` | 403 | Invalid or disabled API key |
+| `HMAC_MISMATCH` | 401 | Signature verification failed |
+
+### Managing API Keys
+
+API keys are stored in the `api_keys` table. To create a new key:
+```sql
+INSERT INTO api_keys (key_id, secret_hash, name)
+VALUES (
+  'your_key_id',
+  'encrypted_secret_here',
+  'My Application Key'
+);
+```
+
+**Note**: In production, secrets should be encrypted using KMS (AWS KMS, Google KMS, or Azure Key Vault).
+
