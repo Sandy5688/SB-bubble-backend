@@ -336,13 +336,86 @@ const uploadDocument = async (req, res) => {
 
 
 // Export all controller methods
+
+// Reject KYC
+const rejectKYC = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+
+    await pool.query(
+      `UPDATE kyc_sessions 
+       SET status = 'rejected', 
+           rejection_reason = $1,
+           reviewed_by = $2,
+           reviewed_at = NOW(),
+           updated_at = NOW()
+       WHERE id = $3`,
+      [reason || 'Failed verification', adminId, sessionId]
+    );
+
+    // Audit log
+    await pool.query(
+      `INSERT INTO audit_logs (user_id, action, details, created_at)
+       VALUES ($1, 'kyc_rejected', $2, NOW())`,
+      [adminId, JSON.stringify({ sessionId, reason })]
+    );
+
+    logger.info('KYC session rejected', { sessionId, adminId });
+
+    res.json({
+      success: true,
+      message: 'KYC session rejected'
+    });
+  } catch (error) {
+    logger.error('Reject KYC failed', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reject KYC session'
+    });
+  }
+};
+
+// Get pending sessions (admin only)
+const getPendingSessions = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, user_id, status, selected_id_type, fraud_score, 
+              created_at, updated_at
+       FROM kyc_sessions
+       WHERE status IN ('review', 'pending')
+       ORDER BY created_at ASC
+       LIMIT 50`
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    logger.error('Get pending sessions failed', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch pending sessions'
+    });
+  }
+};
+
+
+// Export all controller methods
 module.exports = {
   startKYC,
   uploadDocument,
   getStatus,
   approveKYC,
-  getUploadURL,
+  rejectKYC,
+  getPendingSessions,
+  getUploadURL: getUploadUrl,
   confirmUpload,
   verifyOTP,
-  rejectKYC
+  sendOTP,
+  submitConsent,
+  getOptions,
+  changeIDType
 };
