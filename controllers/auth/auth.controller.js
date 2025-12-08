@@ -59,7 +59,7 @@ const register = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Registration failed', { error: error.message, email: req.body.email });
+    logger.error('Registration failed', { error: error.message });
     res.status(500).json({ success: false, error: 'Registration failed' });
   } finally {
     client.release();
@@ -124,7 +124,7 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    logger.error('Login failed', { error: error.message, email: req.body.email });
+    logger.error('Login failed', { error: error.message });
     res.status(500).json({ success: false, error: 'Login failed' });
   } finally {
     client.release();

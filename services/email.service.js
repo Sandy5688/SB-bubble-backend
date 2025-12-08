@@ -69,7 +69,7 @@ class EmailService {
       logger.info('Magic link email sent', { email });
       return true;
     } catch (error) {
-      logger.error('Failed to send magic link email', { error: error.message, email });
+      logger.error('Failed to send magic link email', { error: error.message });
       throw new Error('Failed to send email');
     }
   }
