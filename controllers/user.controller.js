@@ -61,3 +61,80 @@ class UserController {
 }
 
 module.exports = new UserController();
+
+// Add missing methods that routes expect
+UserController.prototype.uploadFile = async function(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const file = req.file;
+    
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file provided'
+      });
+    }
+    
+    const fileService = require('../services/file.service');
+    const result = await fileService.uploadUserFile(userId, file);
+    
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+UserController.prototype.deleteAccount = async function(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { confirmPassword } = req.body;
+    
+    // Verify password before deletion
+    const bcrypt = require('bcrypt');
+    const { pool } = require('../config/database');
+    
+    const userResult = await pool.query(
+      'SELECT password_hash FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    if (user.password_hash && confirmPassword) {
+      const validPassword = await bcrypt.compare(confirmPassword, user.password_hash);
+      if (!validPassword) {
+        return res.status(401).json({ success: false, error: 'Invalid password' });
+      }
+    }
+    
+    // Soft delete user
+    await pool.query(
+      `UPDATE users 
+       SET deleted_at = NOW(), 
+           deletion_reason = 'user_requested',
+           email = email || '.deleted.' || id::text
+       WHERE id = $1`,
+      [userId]
+    );
+    
+    // Revoke all tokens
+    await pool.query(
+      'UPDATE refresh_tokens SET revoked = true WHERE user_id = $1',
+      [userId]
+    );
+    
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
