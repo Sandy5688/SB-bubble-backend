@@ -9,7 +9,8 @@
     "test": "jest",
     "test:region": "jest tests/integration/region.test.js tests/unit/regionService.test.js",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "migrate": "node scripts/run-migrations.js"
   },
   "engines": {
     "node": ">=18.0.0"

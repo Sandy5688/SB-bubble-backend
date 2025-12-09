@@ -67,3 +67,8 @@ server.headersTimeout = 66000;
 if (process.env.START_WORKERS === 'true') {
   require('./workers/index');
 }
+
+// Run migrations on startup in production
+if (env.NODE_ENV === 'production') {
+  require('./scripts/run-migrations');
+}
