@@ -271,6 +271,8 @@ const getMe = async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
     const user = result.rows[0];
+    await client.query('SELECT set_user_context($1)', [user.id]);
+    await client.query('SELECT set_user_context($1)', [user.id]);
     res.json({
       success: true,
       data: {
