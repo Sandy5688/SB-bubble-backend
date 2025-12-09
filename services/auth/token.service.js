@@ -89,3 +89,37 @@ class TokenService {
 }
 
 module.exports = new TokenService();
+
+/**
+ * Verify refresh token
+ */
+async function verifyRefreshToken(token) {
+  try {
+    // Decode token to get user info
+    const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET);
+    
+    // Check if token exists and is not revoked
+    const result = await pool.query(
+      `SELECT * FROM refresh_tokens 
+       WHERE token_hash = $1 AND revoked = false`,
+      [hashToken(token)]
+    );
+    
+    if (result.rows.length === 0) {
+      throw new Error('Invalid or revoked refresh token');
+    }
+    
+    return { 
+      success: true, 
+      userId: decoded.userId,
+      token: result.rows[0]
+    };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error.message 
+    };
+  }
+}
+
+module.exports.verifyRefreshToken = verifyRefreshToken;
